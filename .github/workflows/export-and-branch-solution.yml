@@ -26,8 +26,8 @@ on:
 env:
 #edit your values here
   ENVIRONMENT_URL: 'https://inprovagroupdev.crm4.dynamics.com'
-  CLIENT_ID: 'service account-ish'
-  TENANT_ID: '77f....'
+  CLIENT_ID: '44bc2b49-6998-4fdc-9841-d34738e730d6'
+  TENANT_ID: '77bd4cfb-3a52-44f9-8695-8848578737e1'
 permissions:
   contents: write
 jobs:
