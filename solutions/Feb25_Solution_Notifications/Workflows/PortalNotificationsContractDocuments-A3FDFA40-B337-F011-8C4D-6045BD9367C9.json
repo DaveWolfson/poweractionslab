@@ -1,0 +1,1130 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sql-1": {
+        "api": {
+          "name": "shared_sql"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsql_9443d"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_commondataserviceforapps-1": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_2acba"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_sharepointonline-1": {
+        "api": {
+          "name": "shared_sharepointonline"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsharepointonline_1c93b"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_commondataserviceforapps-2": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_00685"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "type": "Recurrence",
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2025-05-23T03:00:00Z"
+          },
+          "metadata": {
+            "operationMetadataId": "ba80e68f-ccd1-4daf-a771-b82709e57bb1"
+          }
+        }
+      },
+      "actions": {
+        "SP_GetNotificationTypes": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "server": "default",
+              "database": "default",
+              "procedure": "[notifications].[GetNotificationTypes]"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+              "operationId": "ExecuteProcedure_V2",
+              "connectionName": "shared_sql-1"
+            }
+          },
+          "runAfter": {
+            "Initialize_NotificationType_Name": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "d27891d7-8817-4c93-99ce-4e9134c136fe"
+          }
+        },
+        "Parse_JSON_NotificationTypes": {
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@outputs('SP_GetNotificationTypes')?['body/outputparameters/NotificationTypesJson']",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "Id": {
+                    "type": "string"
+                  },
+                  "Title": {
+                    "type": "string"
+                  },
+                  "Category": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "Id",
+                  "Title",
+                  "Category"
+                ]
+              }
+            }
+          },
+          "runAfter": {
+            "SP_GetNotificationTypes": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "21a11fd8-0a38-4d65-8b30-bcb3047d0069"
+          }
+        },
+        "Filter_NoticiationTypes": {
+          "type": "Query",
+          "inputs": {
+            "from": "@body('Parse_JSON_NotificationTypes')",
+            "where": "@equals(item()['Title'],variables('NotificationTypeName'))"
+          },
+          "runAfter": {
+            "Parse_JSON_NotificationTypes": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6c98a590-371e-462a-aa8a-2b3c3a21f518"
+          }
+        },
+        "Initialize_NotificationType_Name": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "NotificationTypeName",
+                "type": "string",
+                "value": "New Documentation"
+              }
+            ]
+          },
+          "runAfter": {
+            "List_contractDocumentTypes": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b21543ad-60e8-4d13-a3be-65e4d689d285"
+          }
+        },
+        "List_contractDocumentTypes": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "adx_sitesettings",
+              "fetchXml": "<fetch>\n  <entity name=\"adx_sitesetting\">\n    <attribute name=\"adx_name\" />\n    <attribute name=\"adx_value\" />\n    <filter>\n      <condition attribute=\"adx_name\" operator=\"eq\" value=\"PortalContractDocumentTypes\" />\n    </filter>\n  </entity>\n</fetch>"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "connectionName": "shared_commondataserviceforapps-1"
+            }
+          },
+          "runAfter": {
+            "Initialize_currentContract": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "22cbc92e-4502-47f6-bdc5-500e3cdd4b9e"
+          }
+        },
+        "Initialize_filename": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "fileName",
+                "type": "string"
+              }
+            ]
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "8cc838c6-1726-42c4-89dc-6874406fafae"
+          }
+        },
+        "Initialize_contractFileList": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "contractFileList",
+                "type": "array"
+              }
+            ]
+          },
+          "runAfter": {
+            "Initialize_filename": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "8c9dcfe9-fa10-4707-b5f9-ec412cf83105"
+          }
+        },
+        "Initialize_associatedFileList": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "associatedFileList",
+                "type": "array"
+              }
+            ]
+          },
+          "runAfter": {
+            "Initialize_contractFileList": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "8c9dcfe9-fa10-4707-b5f9-ec412cf83105"
+          }
+        },
+        "Initialize_contractNumber": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "contractNumber",
+                "type": "string"
+              }
+            ]
+          },
+          "runAfter": {
+            "Initialize_associatedFileList": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "80c61911-37f2-47de-a335-ab1f079cf3b6"
+          }
+        },
+        "Initialize_oldContract": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "oldContract",
+                "type": "string",
+                "value": "0"
+              }
+            ]
+          },
+          "runAfter": {
+            "Initialize_contractNumber": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "64bda3cc-47e9-4cd4-8a1b-b422a2cb116f"
+          }
+        },
+        "Initialize_currentContract": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "currentContract",
+                "type": "object"
+              }
+            ]
+          },
+          "runAfter": {
+            "Initialize_oldContract": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "d7e4916a-fe33-4272-843a-205d7e6bb6a7"
+          }
+        },
+        "Initialize_startPeriod": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "StartPeriod",
+                "type": "string",
+                "value": "@getPastTime(1,'Day')"
+              }
+            ]
+          },
+          "runAfter": {
+            "Filter_NoticiationTypes": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "23c82281-fcf1-4b78-beed-ed3d4f2f102c"
+          }
+        },
+        "Initialize_roleToCheck": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "roleToCheck",
+                "type": "array",
+                "value": [
+                  "Member"
+                ]
+              }
+            ]
+          },
+          "runAfter": {
+            "Initialize_startPeriod": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "0c30f66d-93aa-451f-8ab4-969c232a8bc9"
+          }
+        },
+        "Apply_to_each_RoleToCheck": {
+          "type": "Foreach",
+          "foreach": "@variables('roleToCheck')",
+          "actions": {
+            "Get_files_(properties_only)": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "dataset": "https://inprovayammer.sharepoint.com/sites/crmcollection/crm",
+                  "table": "6fa35cb7-df4e-4d36-ba0b-15c21b19dfb5",
+                  "$filter": "Created ge '@{variables('StartPeriod')}' and FSObjType eq 0 and (VisibleTo eq '@{items('Apply_to_each_RoleToCheck')}' or VisibleTo eq 'All')",
+                  "view": "0eaf967d-7866-4373-85bf-0c5cd89cc591"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "operationId": "GetFileItems",
+                  "connectionName": "shared_sharepointonline-1"
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "a4731c0b-5031-4df3-a41d-f89e2e3186d4"
+              }
+            },
+            "Select_fileData": {
+              "type": "Select",
+              "inputs": {
+                "from": "@outputs('Get_files_(properties_only)')?['body/value']",
+                "select": {
+                  "FilenameWithExtension": "@{item()?['{FilenameWithExtension}']}",
+                  "Path": "@{item()?['{Path}']}",
+                  "DocumentType": "@item()?['DocumentType/Value']"
+                }
+              },
+              "runAfter": {
+                "Get_files_(properties_only)": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "449ec077-5d76-42a4-aa4c-0c0e0c3bfd35"
+              }
+            },
+            "Apply_to_each_file_modified": {
+              "type": "Foreach",
+              "foreach": "@body('Select_fileData')",
+              "actions": {
+                "Set_contractNumber": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "contractNumber",
+                    "value": "@Replace(Replace(items('Apply_to_each_file_modified')['Path'],'new_agreement/',''),'/','')\r\n"
+                  },
+                  "metadata": {
+                    "operationMetadataId": "3013fa4a-0186-4119-8812-b31203f5bd3e"
+                  }
+                },
+                "Set_fileName": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "fileName",
+                    "value": "@{items('Apply_to_each_file_modified')['FilenameWithExtension']}\n"
+                  },
+                  "runAfter": {
+                    "Set_contractNumber": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "aea65521-bc48-4351-86f7-b0d238da8b6b"
+                  }
+                },
+                "Condition_same_Contract_or_NULL": {
+                  "type": "If",
+                  "expression": {
+                    "or": [
+                      {
+                        "equals": [
+                          "@variables('contractNumber')",
+                          "@variables('oldContract')"
+                        ]
+                      },
+                      {
+                        "equals": [
+                          "@variables('oldContract')",
+                          "0"
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Condition_NULL": {
+                      "type": "If",
+                      "expression": {
+                        "and": [
+                          {
+                            "equals": [
+                              "@variables('oldContract')",
+                              "0"
+                            ]
+                          }
+                        ]
+                      },
+                      "actions": {
+                        "List_contract_details-copy": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "parameters": {
+                              "entityName": "new_agreements",
+                              "fetchXml": "<fetch>\n  <entity name=\"new_agreement\">\n    <attribute name=\"new_agreementname\" />\n    <attribute name=\"new_member\" />\n    <filter>\n      <condition attribute=\"new_agreementname\" operator=\"eq\" value=\"@{variables('contractNumber')}\" />\n    </filter>\n  </entity>\n</fetch>"
+                            },
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                              "operationId": "ListRecords",
+                              "connectionName": "shared_commondataserviceforapps-2"
+                            }
+                          },
+                          "metadata": {
+                            "operationMetadataId": "ae73c18f-c24f-40da-9253-43a4d0827667"
+                          }
+                        },
+                        "Set_currentContract-copy": {
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "currentContract",
+                            "value": "@first(outputs('List_contract_details-copy')?['body/value'])"
+                          },
+                          "runAfter": {
+                            "List_contract_details-copy": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "34c3469c-7a33-4f01-8908-9016c1599fef"
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {}
+                      },
+                      "metadata": {
+                        "operationMetadataId": "a050f7e1-19d7-49c7-831b-52ee9ba622a8"
+                      }
+                    },
+                    "Is_a_contract_document": {
+                      "type": "If",
+                      "expression": {
+                        "and": [
+                          {
+                            "contains": [
+                              "@split(first(outputs('List_contractDocumentTypes')?['body/value'])['adx_value'], ',')",
+                              "@items('Apply_to_each_file_modified')['DocumentType']"
+                            ]
+                          }
+                        ]
+                      },
+                      "actions": {
+                        "Append_to_contractFileList": {
+                          "type": "AppendToArrayVariable",
+                          "inputs": {
+                            "name": "contractFileList",
+                            "value": "@variables('fileName')"
+                          },
+                          "metadata": {
+                            "operationMetadataId": "29f40e20-0797-4bfd-a183-1d43c73259a4"
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {
+                          "Append_to_associatedFileList": {
+                            "type": "AppendToArrayVariable",
+                            "inputs": {
+                              "name": "associatedFileList",
+                              "value": "@variables('fileName')"
+                            },
+                            "metadata": {
+                              "operationMetadataId": "b7234619-9f39-4a4f-a58b-467351013741"
+                            }
+                          }
+                        }
+                      },
+                      "runAfter": {
+                        "Condition_NULL": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "d0d1b288-219f-4c1c-9f8d-30853da4d401"
+                      }
+                    },
+                    "Set_oldContract": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "oldContract",
+                        "value": "@variables('contractNumber')"
+                      },
+                      "runAfter": {
+                        "Is_a_contract_document": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "6ff5d0ca-9800-4694-93e5-6b5cd654b9ca"
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "List_contract_details": {
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "parameters": {
+                            "entityName": "new_agreements",
+                            "fetchXml": "<fetch>\n  <entity name=\"new_agreement\">\n    <attribute name=\"new_agreementname\" />\n    <attribute name=\"new_member\" />\n    <filter>\n      <condition attribute=\"new_agreementname\" operator=\"eq\" value=\"@{variables('oldContract')}\" />\n      <condition attribute=\"new_contractdocumentationverified\" operator=\"eq\" value=\"100000000\" />\n    </filter>\n  </entity>\n</fetch>"
+                          },
+                          "host": {
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                            "operationId": "ListRecords",
+                            "connectionName": "shared_commondataserviceforapps-2"
+                          }
+                        },
+                        "metadata": {
+                          "operationMetadataId": "ae73c18f-c24f-40da-9253-43a4d0827667"
+                        }
+                      },
+                      "Is_the_right_DV": {
+                        "type": "If",
+                        "expression": {
+                          "and": [
+                            {
+                              "greater": [
+                                "@length(outputs('List_contract_details')?['body/value'])",
+                                0
+                              ]
+                            }
+                          ]
+                        },
+                        "actions": {
+                          "Set_currentContract": {
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "currentContract",
+                              "value": "@first(outputs('List_contract_details')?['body/value'])"
+                            },
+                            "metadata": {
+                              "operationMetadataId": "34c3469c-7a33-4f01-8908-9016c1599fef"
+                            }
+                          },
+                          "Parse_JSON": {
+                            "type": "ParseJson",
+                            "inputs": {
+                              "content": "@variables('currentContract')",
+                              "schema": {
+                                "type": "object",
+                                "properties": {
+                                  "new_agreementid": {
+                                    "type": "string"
+                                  },
+                                  "new_agreementname": {
+                                    "type": "string"
+                                  },
+                                  "new_member": {
+                                    "type": "string"
+                                  },
+                                  "_new_member_value": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            },
+                            "runAfter": {
+                              "Set_currentContract": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "018240ce-a6e9-47b3-9406-3a746be64dd4"
+                            }
+                          },
+                          "clear_contractFileList": {
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "contractFileList",
+                              "value": []
+                            },
+                            "runAfter": {
+                              "any_contract_document": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "623d7089-d787-46d8-8622-adf385c6fa8b"
+                            }
+                          },
+                          "clear_associatedFileList": {
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "associatedFileList",
+                              "value": []
+                            },
+                            "runAfter": {
+                              "clear_contractFileList": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "623d7089-d787-46d8-8622-adf385c6fa8b"
+                            }
+                          },
+                          "is_a_contract_document_2": {
+                            "type": "If",
+                            "expression": {
+                              "and": [
+                                {
+                                  "contains": [
+                                    "@split(first(outputs('List_contractDocumentTypes')?['body/value'])['adx_value'], ',')",
+                                    "@items('Apply_to_each_file_modified')['DocumentType']"
+                                  ]
+                                }
+                              ]
+                            },
+                            "actions": {
+                              "Append_to_contractFileList_1": {
+                                "type": "AppendToArrayVariable",
+                                "inputs": {
+                                  "name": "contractFileList",
+                                  "value": "@variables('fileName')"
+                                },
+                                "metadata": {
+                                  "operationMetadataId": "29f40e20-0797-4bfd-a183-1d43c73259a4"
+                                }
+                              }
+                            },
+                            "else": {
+                              "actions": {
+                                "Append_to_associatedFileList_1": {
+                                  "type": "AppendToArrayVariable",
+                                  "inputs": {
+                                    "name": "associatedFileList",
+                                    "value": "@variables('fileName')"
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "ef3af46d-1ebe-4db4-89a2-3963fba99e65"
+                                  }
+                                }
+                              }
+                            },
+                            "runAfter": {
+                              "clear_associatedFileList": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "563f6b98-96ae-43c4-bbb2-48201db80dac"
+                            }
+                          },
+                          "any_contract_document": {
+                            "type": "If",
+                            "expression": {
+                              "and": [
+                                {
+                                  "greater": [
+                                    "@length(variables('contractFileList'))",
+                                    0
+                                  ]
+                                }
+                              ]
+                            },
+                            "actions": {
+                              "SP_CreateNotification_contract": {
+                                "type": "OpenApiConnection",
+                                "inputs": {
+                                  "parameters": {
+                                    "server": "default",
+                                    "database": "default",
+                                    "procedure": "[notifications].[CreateNotification]",
+                                    "parameters/actionLink": "/membercontractedit/?agreementid=@{body('Parse_JSON')?['new_agreementid']}&documents=contract",
+                                    "parameters/content": "\nContract '@{body('Parse_JSON')?['new_agreementname']}' has @{length(variables('contractFileList'))} new contract Documents",
+                                    "parameters/notificationId": "@first(body('Filter_NoticiationTypes'))['Id']",
+                                    "parameters/organisationId": "@body('Parse_JSON')?['_new_member_value']",
+                                    "parameters/title": "New Documents"
+                                  },
+                                  "host": {
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                                    "operationId": "ExecuteProcedure_V2",
+                                    "connectionName": "shared_sql-1"
+                                  }
+                                },
+                                "metadata": {
+                                  "operationMetadataId": "7a7a58b7-b074-42ad-9ba8-a90d96ba85f8"
+                                }
+                              }
+                            },
+                            "else": {
+                              "actions": {}
+                            },
+                            "runAfter": {
+                              "Parse_JSON": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "b5738353-cc6f-47b6-94ea-d7327d35fe88"
+                            }
+                          },
+                          "any_associated_document": {
+                            "type": "If",
+                            "expression": {
+                              "and": [
+                                {
+                                  "greater": [
+                                    "@length(variables('associatedFileList'))",
+                                    0
+                                  ]
+                                }
+                              ]
+                            },
+                            "actions": {
+                              "SP_CreateNotification_associated": {
+                                "type": "OpenApiConnection",
+                                "inputs": {
+                                  "parameters": {
+                                    "server": "default",
+                                    "database": "default",
+                                    "procedure": "[notifications].[CreateNotification]",
+                                    "parameters/actionLink": "/membercontractedit/?agreementid=@{body('Parse_JSON')?['new_agreementid']}&documents=associated",
+                                    "parameters/content": "\nContract '@{body('Parse_JSON')?['new_agreementname']}' has @{length(variables('associatedFileList'))} new associated Documents",
+                                    "parameters/notificationId": "@first(body('Filter_NoticiationTypes'))['Id']",
+                                    "parameters/organisationId": "@body('Parse_JSON')?['_new_member_value']",
+                                    "parameters/title": "New Documents"
+                                  },
+                                  "host": {
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                                    "operationId": "ExecuteProcedure_V2",
+                                    "connectionName": "shared_sql-1"
+                                  }
+                                },
+                                "metadata": {
+                                  "operationMetadataId": "7a7a58b7-b074-42ad-9ba8-a90d96ba85f8"
+                                }
+                              }
+                            },
+                            "else": {
+                              "actions": {}
+                            },
+                            "runAfter": {
+                              "Parse_JSON": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "a9607fdf-1e1f-4b3f-991b-87ae4dca4912"
+                            }
+                          },
+                          "Set_oldContract-copy": {
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "oldContract",
+                              "value": "@variables('contractNumber')"
+                            },
+                            "runAfter": {
+                              "is_a_contract_document_2": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "6ff5d0ca-9800-4694-93e5-6b5cd654b9ca"
+                            }
+                          }
+                        },
+                        "else": {
+                          "actions": {
+                            "empty_oldContract": {
+                              "type": "SetVariable",
+                              "inputs": {
+                                "name": "oldContract",
+                                "value": "0"
+                              },
+                              "metadata": {
+                                "operationMetadataId": "9c913eb3-d10f-46af-9e7a-173e8badbe8e"
+                              }
+                            },
+                            "clear_contractFileList-copy": {
+                              "type": "SetVariable",
+                              "inputs": {
+                                "name": "contractFileList",
+                                "value": []
+                              },
+                              "runAfter": {
+                                "empty_oldContract": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "metadata": {
+                                "operationMetadataId": "623d7089-d787-46d8-8622-adf385c6fa8b"
+                              }
+                            },
+                            "clear_associatedFileList-copy": {
+                              "type": "SetVariable",
+                              "inputs": {
+                                "name": "associatedFileList",
+                                "value": []
+                              },
+                              "runAfter": {
+                                "clear_contractFileList-copy": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "metadata": {
+                                "operationMetadataId": "623d7089-d787-46d8-8622-adf385c6fa8b"
+                              }
+                            },
+                            "is_a_contract_document_2-copy": {
+                              "type": "If",
+                              "expression": {
+                                "and": [
+                                  {
+                                    "contains": [
+                                      "@split(first(outputs('List_contractDocumentTypes')?['body/value'])['adx_value'], ',')",
+                                      "@items('Apply_to_each_file_modified')['DocumentType']"
+                                    ]
+                                  }
+                                ]
+                              },
+                              "actions": {
+                                "Append_to_contractFileList_2": {
+                                  "type": "AppendToArrayVariable",
+                                  "inputs": {
+                                    "name": "contractFileList",
+                                    "value": "@variables('fileName')"
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "29f40e20-0797-4bfd-a183-1d43c73259a4"
+                                  }
+                                }
+                              },
+                              "else": {
+                                "actions": {
+                                  "Append_to_associatedFileList_2": {
+                                    "type": "AppendToArrayVariable",
+                                    "inputs": {
+                                      "name": "associatedFileList",
+                                      "value": "@variables('fileName')"
+                                    },
+                                    "metadata": {
+                                      "operationMetadataId": "ef3af46d-1ebe-4db4-89a2-3963fba99e65"
+                                    }
+                                  }
+                                }
+                              },
+                              "runAfter": {
+                                "clear_associatedFileList-copy": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "metadata": {
+                                "operationMetadataId": "563f6b98-96ae-43c4-bbb2-48201db80dac"
+                              }
+                            }
+                          }
+                        },
+                        "runAfter": {
+                          "List_contract_details": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "07c6676c-10d2-499f-86ac-6c18cad74a18"
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Set_fileName": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "b8b70c51-7614-4afd-a9d5-1fa9d9f333f5"
+                  }
+                }
+              },
+              "runAfter": {
+                "Select_fileData": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e9214158-d705-4c95-a2b7-451b29c35472"
+              }
+            },
+            "List_contract_details-copy2": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "new_agreements",
+                  "fetchXml": "<fetch>\n  <entity name=\"new_agreement\">\n    <attribute name=\"new_agreementname\" />\n    <attribute name=\"new_member\" />\n    <filter>\n      <condition attribute=\"new_agreementname\" operator=\"eq\" value=\"@{variables('contractNumber')}\" />\n    </filter>\n  </entity>\n</fetch>"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "connectionName": "shared_commondataserviceforapps-2"
+                }
+              },
+              "runAfter": {
+                "Apply_to_each_file_modified": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "ae73c18f-c24f-40da-9253-43a4d0827667"
+              }
+            },
+            "Is_the_right_DV_2": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "greater": [
+                      "@length(outputs('List_contract_details-copy2')?['body/value'])",
+                      0
+                    ]
+                  }
+                ]
+              },
+              "actions": {
+                "Set_currentContract-copy2": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "currentContract",
+                    "value": "@first(outputs('List_contract_details-copy2')?['body/value'])"
+                  },
+                  "metadata": {
+                    "operationMetadataId": "34c3469c-7a33-4f01-8908-9016c1599fef"
+                  }
+                },
+                "Parse_JSON-copy": {
+                  "type": "ParseJson",
+                  "inputs": {
+                    "content": "@variables('currentContract')",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "new_agreementid": {
+                          "type": "string"
+                        },
+                        "new_agreementname": {
+                          "type": "string"
+                        },
+                        "new_member": {
+                          "type": "string"
+                        },
+                        "_new_member_value": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Set_currentContract-copy2": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "cd4fa54d-83d8-43dc-bc89-b34a4ad81c99"
+                  }
+                },
+                "any_contract_document-copy": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "greater": [
+                          "@length(variables('contractFileList'))",
+                          0
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "SP_CreateNotification_contract_1": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "server": "default",
+                          "database": "default",
+                          "procedure": "[notifications].[CreateNotification]",
+                          "parameters/actionLink": "/membercontractedit/?agreementid=@{body('Parse_JSON-copy')?['new_agreementid']}&documents=contract",
+                          "parameters/content": "\nContract '@{body('Parse_JSON-copy')?['new_agreementname']}' has @{length(variables('contractFileList'))} new contract Documents",
+                          "parameters/notificationId": "@first(body('Filter_NoticiationTypes'))['Id']",
+                          "parameters/organisationId": "@body('Parse_JSON-copy')?['_new_member_value']",
+                          "parameters/title": "New Documents"
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                          "operationId": "ExecuteProcedure_V2",
+                          "connectionName": "shared_sql-1"
+                        }
+                      },
+                      "metadata": {
+                        "operationMetadataId": "7a7a58b7-b074-42ad-9ba8-a90d96ba85f8"
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {}
+                  },
+                  "runAfter": {
+                    "Parse_JSON-copy": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "0c8f03eb-6e35-4833-9098-0785cbdb785a"
+                  }
+                },
+                "any_associated_document-copy": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "greater": [
+                          "@length(variables('associatedFileList'))",
+                          0
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "SP_CreateNotification_associated_1": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "server": "default",
+                          "database": "default",
+                          "procedure": "[notifications].[CreateNotification]",
+                          "parameters/actionLink": "/membercontractedit/?agreementid=@{body('Parse_JSON-copy')?['new_agreementid']}&documents=associated",
+                          "parameters/content": "\nContract '@{body('Parse_JSON-copy')?['new_agreementname']}'  has @{length(variables('associatedFileList'))} new associated Documents",
+                          "parameters/notificationId": "@first(body('Filter_NoticiationTypes'))['Id']",
+                          "parameters/organisationId": "@body('Parse_JSON-copy')?['_new_member_value']",
+                          "parameters/title": "New Documents"
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                          "operationId": "ExecuteProcedure_V2",
+                          "connectionName": "shared_sql-1"
+                        }
+                      },
+                      "metadata": {
+                        "operationMetadataId": "7a7a58b7-b074-42ad-9ba8-a90d96ba85f8"
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {}
+                  },
+                  "runAfter": {
+                    "Parse_JSON-copy": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "a85cac04-5b4e-4999-82ef-a86bc74048de"
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "List_contract_details-copy2": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "43cda130-796c-4a53-aa57-6133831d9037"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_roleToCheck": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "370ffa4a-2c9d-431a-beef-345a413be188"
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

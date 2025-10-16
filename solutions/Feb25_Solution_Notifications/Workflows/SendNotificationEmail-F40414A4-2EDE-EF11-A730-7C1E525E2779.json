@@ -1,0 +1,239 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_00685"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_sql-1": {
+        "api": {
+          "name": "shared_sql"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsql_9443d"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_office365_1": {
+        "api": {
+          "name": "shared_office365"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedoffice365_2395b"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "QuantumLogoURL (new_quantumlogourl)": {
+          "defaultValue": "https://www.inprovaquantum.com/QuantumLogo",
+          "type": "String",
+          "metadata": {
+            "schemaName": "new_quantumlogourl"
+          }
+        },
+        "QuantumNotificationURL (new_QuantumNotificationURL)": {
+          "defaultValue": "https://www.inprovaquantum.com/notificationsalertsmanagement/",
+          "type": "String",
+          "metadata": {
+            "schemaName": "new_QuantumNotificationURL"
+          }
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "type": "Recurrence",
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2025-01-14T10:00:00Z"
+          },
+          "metadata": {
+            "operationMetadataId": "5e94ff77-bec1-4ed3-a267-750085c6eb3e"
+          }
+        }
+      },
+      "actions": {
+        "List_rows": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "contacts",
+              "fetchXml": "<fetch distinct=\"true\" >\n    <entity name=\"contact\" >\n        <attribute name=\"emailaddress1\" />\n        <attribute name=\"contactid\" />\n        <attribute name=\"parentcustomerid\" />\n        <attribute name=\"new_webrole\" />\n        <attribute name=\"firstname\" />\n        <filter>\n            <condition attribute=\"emailaddress1\" operator=\"not-null\" value=\"\" />\n            <condition attribute=\"statuscode\" operator=\"eq\" value=\"1\" />\n            <condition attribute=\"parentcustomerid\" operator=\"not-null\" value=\"\" />\n            <condition attribute=\"new_webrole\" operator=\"not-in\" >\n                <value>\n                    100000008\n                </value>\n                <value>\n                    100000009\n                </value>\n            </condition>\n            <condition attribute=\"new_webrole\" operator=\"not-null\" value=\"\" />\n            <condition attribute=\"emailaddress1\" operator=\"not-like\" value=\"%(%\" />\n            <filter type=\"and\" >\n                <condition attribute=\"adx_identity_lastsuccessfullogin\" operator=\"not-null\" />\n                <condition attribute=\"adx_identity_lastsuccessfullogin\" operator=\"last-x-months\" value=\"3\" />\n            </filter>\n        </filter>\n        <link-entity name=\"stringmap\" from=\"attributevalue\" to=\"new_webrole\" link-type=\"outer\" alias=\"map\" >\n            <attribute name=\"value\" alias=\"Scope\" />\n            <filter>\n                <filter>\n                    <condition attribute=\"objecttypecode\" operator=\"eq\" value=\"2\" />\n                    <condition attribute=\"attributename\" operator=\"eq\" value=\"new_webrole\" />\n                </filter>\n            </filter>\n        </link-entity>\n        <link-entity name=\"account\" from=\"accountid\" to=\"parentcustomerid\" link-type=\"inner\" alias=\"acc\" >\n            <filter type=\"and\" >\n                <condition attribute=\"statecode\" operator=\"eq\" value=\"0\" />\n                <filter type=\"or\" >\n                    <condition attribute=\"new_accounttype\" operator=\"ne\" value=\"100000004\" />\n                    <filter type=\"and\" >\n                        <condition attribute=\"new_accounttype\" operator=\"eq\" value=\"100000004\" />\n                        <condition attribute=\"new_membertype\" operator=\"eq\" value=\"100000007\" />\n                    </filter>\n                </filter>\n            </filter>\n        </link-entity>\n    </entity>\n</fetch>"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "connectionName": "shared_commondataserviceforapps"
+            }
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "8987ce43-e278-4e62-8c0f-4679feead169"
+          }
+        },
+        "Execute_a_SQL_query_(V2)": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "server": "default",
+              "database": "default",
+              "query/query": "delete from notifications.NotificationEmailState"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+              "operationId": "ExecutePassThroughNativeQuery_V2",
+              "connectionName": "shared_sql-1"
+            }
+          },
+          "runAfter": {
+            "List_rows": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "61b2c5ee-4f8c-48fa-83bf-a9d8c9dfccdb"
+          }
+        },
+        "Apply_to_each": {
+          "type": "Foreach",
+          "foreach": "@outputs('List_rows')?['body/value']",
+          "actions": {
+            "To_Check_Email_send_condition": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "server": "default",
+                  "database": "default",
+                  "procedure": "[notifications].[CheckEmailSendCondition]",
+                  "parameters/accountNumber": "@items('Apply_to_each')?['contactid']",
+                  "parameters/organisationId": "@items('Apply_to_each')?['_parentcustomerid_value']",
+                  "parameters/organisationType": "@items('Apply_to_each')?['Scope']",
+                  "parameters/useremail": "@item()?['emailaddress1']",
+                  "parameters/webRole": "@items('Apply_to_each')?['Scope']"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                  "operationId": "ExecuteProcedure_V2",
+                  "connectionName": "shared_sql-1"
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "24a1eb4b-baa5-4d4a-942d-9b5be7011700"
+              }
+            },
+            "Condition": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "not": {
+                      "equals": [
+                        "@length(outputs('To_Check_Email_send_condition')?['body/resultsets/Table1'])",
+                        0
+                      ]
+                    }
+                  }
+                ]
+              },
+              "actions": {
+                "Send_an_email_(V2)": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "emailMessage/To": "AVaniya@inprova.com",
+                      "emailMessage/Subject": "Quantum Notifications Alert",
+                      "emailMessage/Body": "<p>Hi @{items('Apply_to_each')?['firstname']}  ,<br>\n<br>\nWe wanted to let you know that you’ve got new notifications in Quantum.<br>\n <br>\n<br>\nClick <a href=\"@{parameters('QuantumNotificationURL (new_QuantumNotificationURL)')}\">here </a>&nbsp;to view your notifications.<br>\n<br>\n<br>\nPlease note that this email address is not monitored, so we won't be able to respond to any messages sent here. If you need any support, feel free to reach out to us at<a href=\"mailto:info@inprovaquantum.com\"> info@inprovaquantum.com</a> &nbsp;&nbsp;<br>\n<br>\n <br>\n<br>\nKind regards, <br>\nThe Quantum team<br>\n<img src=\"@{parameters('QuantumLogoURL (new_quantumlogourl)')}\" alt=\"Logo\" width=\"300\">\n</p>",
+                      "emailMessage/From": "CustomerSupport@InprovaQuantum.com",
+                      "emailMessage/Importance": "Normal"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                      "operationId": "SendEmailV2",
+                      "connectionName": "shared_office365_1"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "fd794dcd-9987-40f0-9f07-f76d9a55bf66"
+                  }
+                },
+                "Insert_into_Notification_State_Table": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "server": "default",
+                      "database": "default",
+                      "table": "[notifications].[NotificationEmailState]",
+                      "item/UserEmail": "@items('Apply_to_each')?['emailaddress1']",
+                      "item/IsEmailSent": true,
+                      "item/ContactId": "@items('Apply_to_each')?['contactid']",
+                      "item/AccountId": "@items('Apply_to_each')?['_parentcustomerid_value']"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                      "operationId": "PostItem_V2",
+                      "connectionName": "shared_sql-1"
+                    }
+                  },
+                  "runAfter": {
+                    "Send_an_email_(V2)": [
+                      "Succeeded",
+                      "Failed",
+                      "Skipped",
+                      "TimedOut"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "0cb2ee0f-3840-498a-b335-19505d1f7ecf"
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "To_Check_Email_send_condition": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "68381449-2aa3-4751-940c-1f03992db471"
+              }
+            }
+          },
+          "runAfter": {
+            "Execute_a_SQL_query_(V2)": [
+              "Succeeded"
+            ]
+          },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 20
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "f203588c-4c30-4d87-92db-0ba2fb77ee21"
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

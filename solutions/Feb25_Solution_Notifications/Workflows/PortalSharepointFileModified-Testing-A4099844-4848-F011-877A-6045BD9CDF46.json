@@ -1,0 +1,171 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline": {
+        "api": {
+          "name": "shared_sharepointonline"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsharepointonline_1c93b"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "When_a_file_is_created_or_modified_(properties_only)": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "dataset": "https://inprovayammer.sharepoint.com/sites/crmcollection/crm",
+              "table": "6fa35cb7-df4e-4d36-ba0b-15c21b19dfb5"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "operationId": "GetOnUpdatedFileItems",
+              "connectionName": "shared_sharepointonline"
+            }
+          },
+          "recurrence": {
+            "interval": 1,
+            "frequency": "Minute"
+          },
+          "splitOn": "@triggerOutputs()?['body/value']",
+          "metadata": {
+            "operationMetadataId": "f949a8e8-568b-4ff1-b0b8-cb83070d3de1"
+          }
+        }
+      },
+      "actions": {
+        "HTTP_request_(previous_version_metadata)": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "dataset": "https://inprovayammer.sharepoint.com/sites/crmcollection/crm",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists/GetByTitle('agreement')/items(@{triggerBody()?['ID']})/versions?$filter=VersionLabel eq '@{sub(decimal(triggerBody()?['{VersionNumber}']),1)}'&select=DocumentType,VisibleTo"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "operationId": "HttpRequest",
+              "connectionName": "shared_sharepointonline"
+            }
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "a816287a-15be-4e14-9107-232ea777a123"
+          }
+        },
+        "Just_got_all_metadata": {
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@and(and(not(equals(triggerBody()?['DocumentType/Value'],null)),not(equals(triggerBody()?['VisibleTo/Value'],null))),or(equals(body('HTTP_request_(previous_version_metadata)')?['d']?['results']?[0]?['DocumentType'],null),equals(body('HTTP_request_(previous_version_metadata)')?['d']?['results']?[0]?['VisibleTo'],null)))",
+                  true
+                ]
+              }
+            ]
+          },
+          "actions": {
+            "Update_'Metadata_Complete'_": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "dataset": "https://inprovayammer.sharepoint.com/sites/crmcollection/crm",
+                  "table": "6fa35cb7-df4e-4d36-ba0b-15c21b19dfb5",
+                  "id": "@triggerOutputs()?['body/ID']",
+                  "item/MetadataComplete": "@utcNow()"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "operationId": "PatchFileItem",
+                  "connectionName": "shared_sharepointonline"
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "0eeb0e8e-cfdb-411d-a8a0-541355165c54"
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          },
+          "runAfter": {
+            "visible_to": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "1c58b410-c57f-4664-ba86-203e4e85cbb5"
+          }
+        },
+        "Initialize_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "aux",
+                "type": "string"
+              }
+            ]
+          },
+          "runAfter": {
+            "HTTP_request_(previous_version_metadata)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "cb371d1a-b602-47e6-bb95-157ffc6d6414"
+          }
+        },
+        "document_type": {
+          "type": "SetVariable",
+          "inputs": {
+            "name": "aux",
+            "value": "@triggerBody()?['DocumentType/Value']"
+          },
+          "runAfter": {
+            "Initialize_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "766b0121-8b5b-405b-ae1e-37f3ed9d9690"
+          }
+        },
+        "visible_to": {
+          "type": "SetVariable",
+          "inputs": {
+            "name": "aux",
+            "value": "@triggerBody()?['VisibleTo/Value']"
+          },
+          "runAfter": {
+            "document_type": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b6769f24-a6eb-4559-80d7-86dc75564f01"
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

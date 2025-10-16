@@ -1,0 +1,95 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_7515c"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Http",
+          "inputs": {
+            "triggerAuthenticationType": "All",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "new_agreementid": {
+                  "type": "string"
+                },
+                "new_renewalintention": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "acf4bb97-744a-4127-8890-6ee24d9b431d"
+          }
+        }
+      },
+      "actions": {
+        "Update_a_row": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "new_agreements",
+              "recordId": "@triggerBody()?['new_agreementid']",
+              "item/new_renewalintention": "@triggerBody()?['new_renewalintention']"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "UpdateRecord",
+              "connectionName": "shared_commondataserviceforapps"
+            }
+          },
+          "runAfter": {
+            "Response_2": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "7a3bee19-338b-4745-acda-ca01ca719dcd"
+          }
+        },
+        "Response_2": {
+          "type": "Response",
+          "kind": "Http",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "ResponseText": "Account Card updated.",
+              "FeedbackId": "@triggerBody()?['new_agreementid']"
+            }
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "3f61f590-9e60-419e-b079-be6507e3d3a3"
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

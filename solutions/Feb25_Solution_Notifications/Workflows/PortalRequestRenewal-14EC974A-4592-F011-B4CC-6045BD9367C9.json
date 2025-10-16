@@ -1,0 +1,385 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_office365": {
+        "api": {
+          "name": "shared_office365"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedoffice365_2395b"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_commondataserviceforapps": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_2acba"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "EmailErrorReport (new_EmailErrorReport)": {
+          "defaultValue": "dlopez@inprova.com",
+          "type": "String",
+          "metadata": {
+            "schemaName": "new_EmailErrorReport"
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Http",
+          "inputs": {
+            "triggerAuthenticationType": "All",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "agreementId": {
+                  "type": "string"
+                },
+                "contactId": {
+                  "type": "string"
+                },
+                "annualSpend": {
+                  "type": "number"
+                },
+                "contractLength": {
+                  "type": "integer"
+                },
+                "1stextensionMonths": {
+                  "type": "integer"
+                },
+                "2ndextensionMonths": {
+                  "type": "integer"
+                },
+                "3rdextensionMonths": {
+                  "type": "integer"
+                },
+                "4thextensionMonths": {
+                  "type": "integer"
+                },
+                "requestedBy": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "0270733f-826c-4e1c-adba-53edccc67a27"
+          }
+        }
+      },
+      "actions": {
+        "Found_=_False": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "opportunityFound",
+                "type": "boolean",
+                "value": false
+              }
+            ]
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "5913a8f5-465e-48b7-b590-89dcff9cd84c"
+          }
+        },
+        "Catch": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "emailMessage/To": "@parameters('EmailErrorReport (new_EmailErrorReport)')",
+              "emailMessage/Subject": "Flow error",
+              "emailMessage/Body": "<p class=\"editor-paragraph\">Cloud Flow PortalRequestRenewal did a Fail run. Please check run history.</p>",
+              "emailMessage/Importance": "Normal"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+              "operationId": "SendEmailV2",
+              "connectionName": "shared_office365"
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "TimedOut",
+              "Failed"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "5db55b21-e63c-47eb-9093-fa663af793ae"
+          }
+        },
+        "Try": {
+          "type": "Scope",
+          "actions": {
+            "Update_Agreement": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "new_agreements",
+                  "recordId": "@triggerBody()?['agreementId']",
+                  "item/new_renewaloutcome": 100000000,
+                  "item/new_RenewalRequestedBy@odata.bind": "contacts(@{triggerBody()?['requestedBy']})",
+                  "item/new_renewalrequesteddate": "@utcNow()"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "UpdateOnlyRecord",
+                  "connectionName": "shared_commondataserviceforapps"
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "69af88d4-b36f-4022-91bd-5a411f54d965"
+              }
+            },
+            "Response": {
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "new_agreementId": "@outputs('Update_Agreement')?['body/@odata.id']"
+                }
+              },
+              "runAfter": {
+                "Update_Agreement": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "9271000e-2b24-42df-84ea-3ddb2350095d"
+              }
+            },
+            "Do_until_Found": {
+              "type": "Until",
+              "expression": "@equals(variables('opportunityFound'),true)",
+              "limit": {
+                "count": 5,
+                "timeout": "PT1H"
+              },
+              "actions": {
+                "List_Opportunities": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "entityName": "opportunities",
+                      "fetchXml": "<fetch>\n  <entity name=\"opportunity\">\n    <attribute name=\"new_originatingagreement\" />\n    <attribute name=\"new_agreementgenerated\" />\n    <attribute name=\"new_opportunityid\" />\n    <attribute name=\"opportunityid\" />\n    <filter>\n      <condition attribute=\"new_originatingagreement\" operator=\"eq\" value=\"@{triggerBody()?['agreementId']}\" />\n    </filter>\n  </entity>\n</fetch>",
+                      "$top": 1
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "operationId": "ListRecords",
+                      "connectionName": "shared_commondataserviceforapps"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "e182f229-05df-4519-9982-5a95cc73c3ed"
+                  }
+                },
+                "Found": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "greater": [
+                          "@length(outputs('List_Opportunities')?['body/value'])\r\n",
+                          0
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Found_=_True": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "opportunityFound",
+                        "value": true
+                      },
+                      "runAfter": {
+                        "Is_contactId_NULL": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "68bd721a-4e0a-42ef-961a-1cf49f0f2e62"
+                      }
+                    },
+                    "Is_contactId_NULL": {
+                      "type": "If",
+                      "expression": {
+                        "and": [
+                          {
+                            "equals": [
+                              "@triggerBody()?['contactId']",
+                              "@null"
+                            ]
+                          }
+                        ]
+                      },
+                      "actions": {
+                        "Update_Opportunity_without_contactId": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "parameters": {
+                              "entityName": "opportunities",
+                              "recordId": "@first(outputs('List_Opportunities')?['body/value'])['opportunityid']\r\n\r\n",
+                              "item/new_1stextensionmonths": "@if(greater(triggerBody()?['1stextensionMonths'], 0), triggerBody()?['1stextensionMonths'], null)",
+                              "item/new_2ndextensionmonths": "@if(greater(triggerBody()?['2ndextensionMonths'], 0), triggerBody()?['2ndextensionMonths'], null)",
+                              "item/new_3rdextensionmonths": "@if(greater(triggerBody()?['3rdextensionMonths'], 0), triggerBody()?['3rdextensionMonths'], null)",
+                              "item/new_annualspend": "@triggerBody()?['annualSpend']",
+                              "item/new_esitmatedcontractlengthmonths": "@triggerBody()?['contractLength']"
+                            },
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                              "operationId": "UpdateOnlyRecord",
+                              "connectionName": "shared_commondataserviceforapps"
+                            }
+                          },
+                          "metadata": {
+                            "operationMetadataId": "396440d4-cb6b-49ff-9a2c-7d18fd6c3aed"
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {
+                          "Update_Opportunity_with_contactId": {
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "parameters": {
+                                "entityName": "opportunities",
+                                "recordId": "@first(outputs('List_Opportunities')?['body/value'])['opportunityid']\r\n\r\n",
+                                "item/new_1stextensionmonths": "@if(greater(triggerBody()?['1stextensionMonths'], 0), triggerBody()?['1stextensionMonths'], null)",
+                                "item/new_2ndextensionmonths": "@if(greater(triggerBody()?['2ndextensionMonths'], 0), triggerBody()?['2ndextensionMonths'], null)",
+                                "item/new_3rdextensionmonths": "@if(greater(triggerBody()?['3rdextensionMonths'], 0), triggerBody()?['3rdextensionMonths'], null)",
+                                "item/new_4thextensionmonths": "@if(greater(triggerBody()?['4thextensionMonths'], 0), triggerBody()?['4thextensionMonths'], null)",
+                                "item/new_CalloffSignatory@odata.bind": "contacts(@{triggerBody()?['contactId']})",
+                                "item/new_annualspend": "@triggerBody()?['annualSpend']",
+                                "item/new_esitmatedcontractlengthmonths": "@triggerBody()?['contractLength']"
+                              },
+                              "host": {
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                                "operationId": "UpdateOnlyRecord",
+                                "connectionName": "shared_commondataserviceforapps"
+                              }
+                            },
+                            "metadata": {
+                              "operationMetadataId": "396440d4-cb6b-49ff-9a2c-7d18fd6c3aed"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Delay_20s": {
+                        "type": "Wait",
+                        "inputs": {
+                          "interval": {
+                            "count": 20,
+                            "unit": "Second"
+                          }
+                        },
+                        "metadata": {
+                          "operationMetadataId": "5bfe2de2-472b-48d9-aa3a-90240e6d667a"
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "List_Opportunities": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "ef644762-34da-46ab-a2ab-584811d18fe8"
+                  }
+                }
+              },
+              "runAfter": {
+                "Response": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "0a0e05ba-57c0-435e-b1e2-1185b4fc87a0"
+              }
+            },
+            "Not_Found": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@variables('opportunityFound')",
+                      "@false"
+                    ]
+                  }
+                ]
+              },
+              "actions": {
+                "To_many_tries": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "emailMessage/To": "@parameters('EmailErrorReport (new_EmailErrorReport)')",
+                      "emailMessage/Subject": "Flow error",
+                      "emailMessage/Body": "<p class=\"editor-paragraph\">Cloud Flow PortalRequestRenewal couldn't find the needed opportunity. Please check run history.</p>",
+                      "emailMessage/Importance": "Normal"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                      "operationId": "SendEmailV2",
+                      "connectionName": "shared_office365"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "3eb1f4fa-df43-4a0d-b08b-147667bf48f1"
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Do_until_Found": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "999c22f2-a78a-40a1-ad04-2b30a0c27fe0"
+              }
+            }
+          },
+          "runAfter": {
+            "Found_=_False": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "9acff669-f4da-4681-9815-df47f128ebe6"
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

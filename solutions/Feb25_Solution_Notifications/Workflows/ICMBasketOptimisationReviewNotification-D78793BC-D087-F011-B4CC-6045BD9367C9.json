@@ -1,0 +1,370 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sql_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsql_cc3ff"
+        },
+        "api": {
+          "name": "shared_sql"
+        }
+      },
+      "shared_commondataserviceforapps": {
+        "impersonation": {},
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_7515c"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      },
+      "shared_sql_2": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsql_d2e08"
+        },
+        "api": {
+          "name": "shared_sql"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2025-07-03T09:00:00Z"
+          },
+          "metadata": {
+            "operationMetadataId": "1e2354e0-d0a8-4665-a47e-32386e3ebd12"
+          },
+          "type": "Recurrence"
+        }
+      },
+      "actions": {
+        "GetMembers": {
+          "runAfter": {
+            "Filter_array": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "1378762a-b27d-4de6-b1f6-7d59b64ebd40"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+              "connectionName": "shared_sql_1",
+              "operationId": "ExecutePassThroughNativeQuery_V2"
+            },
+            "parameters": {
+              "server": "default",
+              "database": "default",
+              "query/query": "select mpl.* from PriceListReview plr\n    inner join pricelist pl on pl.PriceListId = plr.PriceListId\n    inner join \n    (select MemberName,MemberNumber,SupplierCatalogueId from pricelist pl\n    inner join member m on m.MemberId = pl.MemberId \n    where pl.MemberId <> -1\n    ) mpl on mpl.SupplierCatalogueId = pl.SupplierCatalogueId \nWHERE\n  PLR.ExpectedEffectiveDate IS NOT NULL\n  AND pl.FrameworkFlag = 0\n  AND PLR.ExpectedEffectiveDate > '1900-01-01' -- Optional: Prevent overflows\n  AND CONVERT(date, GETDATE()) = CONVERT(date,\n    CASE \n      WHEN PLR.PriceListReviewFrequency IN (1, 3) THEN DATEADD(MONTH, -4, PLR.ExpectedEffectiveDate)\n      WHEN PLR.PriceListReviewFrequency = 2 THEN DATEADD(MONTH, -3, PLR.ExpectedEffectiveDate)\n    END\n  );"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Init_Member_No": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "4cd72e49-cfa8-4187-a57f-4963d58b9ece"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "MemberNo",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Init_Organisation_ID": {
+          "runAfter": {
+            "Initialize_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "35c8e779-8fd0-4a7d-afc5-d1ea5de62e3f"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Organisation ID",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Condition": {
+          "actions": {},
+          "runAfter": {
+            "GetMembers": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Apply_to_each": {
+                "foreach": "@body('GetMembers')?['ResultSets']?['Table1']",
+                "actions": {
+                  "Set_Member_No": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "087faed4-3b05-4084-9b54-7f9b816b5ee7"
+                    },
+                    "type": "SetVariable",
+                    "inputs": {
+                      "name": "MemberNo",
+                      "value": "@{items('apply_to_each')?['MemberNumber']}"
+                    }
+                  },
+                  "List_rows": {
+                    "runAfter": {
+                      "Set_Member_No": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "75d8d2c2-5bc6-435c-a38d-6b39e8c4081f"
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                        "connectionName": "shared_commondataserviceforapps",
+                        "operationId": "ListRecords"
+                      },
+                      "parameters": {
+                        "entityName": "accounts",
+                        "fetchXml": "<fetch top=\"50\">\n  <entity name=\"account\">\n    <attribute name=\"accountid\" />\n    <attribute name=\"accountnumber\" />\n    <attribute name=\"name\" />\n    <attribute name=\"new_accountcardcontact\" />\n    <filter>\n      <condition attribute=\"accountnumber\" operator=\"eq\" value=\"@{variables('MemberNo')}\" />\n    </filter>\n  </entity>\n</fetch>"
+                      },
+                      "authentication": "@parameters('$authentication')"
+                    }
+                  },
+                  "Apply_to_each_2": {
+                    "foreach": "@outputs('List_rows')?['body/value']",
+                    "actions": {
+                      "Set_variable": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "d9d26e96-4206-4796-89de-be92309209d7"
+                        },
+                        "type": "SetVariable",
+                        "inputs": {
+                          "name": "Organisation ID",
+                          "value": "@items('Apply_to_each_2')?['accountid']"
+                        }
+                      },
+                      "Condition_2": {
+                        "actions": {
+                          "Apply_to_each_3": {
+                            "foreach": "@body('Filter_array')",
+                            "actions": {
+                              "Execute_stored_procedure_(V2)": {
+                                "runAfter": {},
+                                "metadata": {
+                                  "operationMetadataId": "7e7f389b-4fb7-4e42-8848-53bd16d8ce38"
+                                },
+                                "type": "OpenApiConnection",
+                                "inputs": {
+                                  "host": {
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                                    "connectionName": "shared_sql_2",
+                                    "operationId": "ExecuteProcedure_V2"
+                                  },
+                                  "parameters": {
+                                    "server": "default",
+                                    "database": "default",
+                                    "procedure": "[notifications].[CreateNotification]",
+                                    "parameters/actionLink": "/basketrecommendation",
+                                    "parameters/content": "It's time to optimise your basket",
+                                    "parameters/notificationId": "@items('Apply_to_each_3')?['Id']",
+                                    "parameters/organisationId": "@variables('Organisation ID')",
+                                    "parameters/title": "@variables('Notification Type')"
+                                  },
+                                  "authentication": "@parameters('$authentication')"
+                                }
+                              }
+                            },
+                            "runAfter": {},
+                            "metadata": {
+                              "operationMetadataId": "168ee7b5-acfe-48f9-924c-de7212a32df6"
+                            },
+                            "type": "Foreach"
+                          }
+                        },
+                        "runAfter": {
+                          "Set_variable": [
+                            "Succeeded"
+                          ]
+                        },
+                        "expression": {
+                          "not": {
+                            "equals": [
+                              "@variables('Organisation ID')",
+                              ""
+                            ]
+                          }
+                        },
+                        "metadata": {
+                          "operationMetadataId": "95997d66-435b-49e7-8341-a270cab33744"
+                        },
+                        "type": "If"
+                      }
+                    },
+                    "runAfter": {
+                      "List_rows": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "fa0397bd-f5ca-4d67-a56b-e980beb65150"
+                    },
+                    "type": "Foreach"
+                  }
+                },
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "e3a27820-29b4-4c8f-9c92-349fe640f52f"
+                },
+                "type": "Foreach",
+                "runtimeConfiguration": {
+                  "concurrency": {
+                    "repetitions": 1
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "equals": [
+              "@body('GetMembers')?['ResultSets']?['Table1']",
+              null
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c4760030-bc30-4d32-862b-40ba1f7b76cd"
+          },
+          "type": "If"
+        },
+        "Get_Notification_Types": {
+          "runAfter": {
+            "Init_Organisation_ID": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "20315b55-4d22-4015-a607-85d8725fb1b8"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+              "connectionName": "shared_sql_2",
+              "operationId": "ExecuteProcedure_V2"
+            },
+            "parameters": {
+              "server": "default",
+              "database": "default",
+              "procedure": "[notifications].[GetNotificationTypes]"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Parse_JSON": {
+          "runAfter": {
+            "Get_Notification_Types": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "eba2fd35-d6a7-4ba0-a26e-725e4bfa2e9b"
+          },
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@outputs('Get_Notification_Types')?['body/outputparameters/NotificationTypesJson']",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "Id": {
+                    "type": "string"
+                  },
+                  "Title": {
+                    "type": "string"
+                  },
+                  "Category": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "Id",
+                  "Title",
+                  "Category"
+                ]
+              }
+            }
+          }
+        },
+        "Filter_array": {
+          "runAfter": {
+            "Parse_JSON": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "679984eb-3c1b-49d5-89aa-a024e9451270"
+          },
+          "type": "Query",
+          "inputs": {
+            "from": "@body('Parse_JSON')",
+            "where": "@equals(item()['Title'], variables('Notification Type'))"
+          }
+        },
+        "Initialize_variable": {
+          "runAfter": {
+            "Init_Member_No": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "fafd466e-0b30-43a2-927e-6a44d344b904"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Notification Type",
+                "type": "string",
+                "value": "Optimise Your Basket"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

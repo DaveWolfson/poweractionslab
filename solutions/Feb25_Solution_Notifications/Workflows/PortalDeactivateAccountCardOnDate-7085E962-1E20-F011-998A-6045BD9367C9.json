@@ -1,0 +1,105 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps-1": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_2acba"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_commondataserviceforapps-2": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_00685"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "type": "Recurrence",
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2025-04-17T20:30:00Z"
+          },
+          "metadata": {
+            "operationMetadataId": "aeecfc41-c677-4641-a770-63d85a6c5edb"
+          }
+        }
+      },
+      "actions": {
+        "List_rows_of_Accountcards_which_expiring_today": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "new_accountcardses",
+              "fetchXml": "<fetch>\n  <entity name=\"new_accountcards\">\n    <attribute name=\"new_deactivatecard\" />\n    <attribute name=\"new_deactivationdate\" />\n    <attribute name=\"new_accountcardsid\" />\n    <attribute name=\"statecode\" />\n    <attribute name=\"statuscode\" />\n    <filter>\n      <condition attribute=\"new_deactivationdate\" operator=\"on-or-before\" value=\"@{formatDateTime(utcNow(), 'yyyy-MM-dd')}\" />\n      <condition attribute=\"statuscode\" operator=\"in\">\n        <value>1</value>\n        <value>100000003</value>\n      </condition>\n    </filter>  \n  </entity>\n</fetch>"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "connectionName": "shared_commondataserviceforapps-1"
+            }
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "5df16d5b-110b-4cc5-b4d6-c2fc40892401"
+          }
+        },
+        "Apply_to_each": {
+          "type": "Foreach",
+          "foreach": "@outputs('List_rows_of_Accountcards_which_expiring_today')?['body/value']",
+          "actions": {
+            "Update_a_row": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "new_accountcardses",
+                  "recordId": "@items('Apply_to_each')?['new_accountcardsid']",
+                  "item/new_deactivatecard": true
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "UpdateOnlyRecord",
+                  "connectionName": "shared_commondataserviceforapps-2"
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "8950efbc-fc9e-421e-b331-ad17e6b6b9ca"
+              }
+            }
+          },
+          "runAfter": {
+            "List_rows_of_Accountcards_which_expiring_today": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "117c9c18-f135-411c-8ff0-894e916e48e8"
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

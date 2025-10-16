@@ -1,0 +1,524 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sql": {
+        "api": {
+          "name": "shared_sql"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsql_9443d"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_commondataserviceforapps-1": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_2acba"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_office365": {
+        "api": {
+          "name": "shared_office365"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedoffice365_2395b"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "undefined",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "EmailErrorReport (new_EmailErrorReport)": {
+          "defaultValue": "dlopez@inprova.com",
+          "type": "String",
+          "metadata": {
+            "schemaName": "new_EmailErrorReport"
+          }
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "type": "Recurrence",
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2024-12-02T02:00:00Z"
+          },
+          "metadata": {
+            "operationMetadataId": "212b279f-f614-4226-b3dc-036b3cc8ce5b"
+          }
+        }
+      },
+      "actions": {
+        "Try": {
+          "type": "Scope",
+          "actions": {
+            "SP_GetNotificationTypes": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "server": "default",
+                  "database": "default",
+                  "procedure": "[notifications].[GetNotificationTypes]"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                  "operationId": "ExecuteProcedure_V2",
+                  "connectionName": "shared_sql"
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "d27891d7-8817-4c93-99ce-4e9134c136fe"
+              }
+            },
+            "Parse_JSON_NotificationTypes": {
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@outputs('SP_GetNotificationTypes')?['body/outputparameters/NotificationTypesJson']",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "Id": {
+                        "type": "string"
+                      },
+                      "Title": {
+                        "type": "string"
+                      },
+                      "Category": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "Id",
+                      "Title",
+                      "Category"
+                    ]
+                  }
+                }
+              },
+              "runAfter": {
+                "SP_GetNotificationTypes": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "21a11fd8-0a38-4d65-8b30-bcb3047d0069"
+              }
+            },
+            "Filter_NoticiationTypes": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Parse_JSON_NotificationTypes')",
+                "where": "@equals(item()['Title'],variables('NotificationTypeName'))"
+              },
+              "runAfter": {
+                "Parse_JSON_NotificationTypes": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6c98a590-371e-462a-aa8a-2b3c3a21f518"
+              }
+            },
+            "List_rows_between_Yesterday_and_Today": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "new_accountcardses",
+                  "fetchXml": "<fetch>\n  <entity name=\"new_accountcards\">\n    <attribute name=\"new_name\" />\n    <attribute name=\"new_accountcardsid\" />\n    <attribute name=\"new_organisation\" />\n    <attribute name=\"createdon\" />\n    <filter>\n      <condition attribute=\"createdon\" operator=\"between\">\n        <value>@{variables('yesterday')}</value>\n        <value>@{variables('today')}</value>\n      </condition>\n      <condition attribute=\"new_organisation\" operator=\"not-null\" value=\"\" />\n    </filter>\n  </entity>\n</fetch>"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "connectionName": "shared_commondataserviceforapps-1"
+                }
+              },
+              "runAfter": {
+                "Set_NotificationTypeId": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f157f96f-8f83-4d77-9d2c-fff133729deb"
+              }
+            },
+            "Select_Organisations": {
+              "type": "Select",
+              "inputs": {
+                "from": "@outputs('List_rows_between_Yesterday_and_Today')?['body/value']",
+                "select": "@item()?['_new_organisation_value']"
+              },
+              "runAfter": {
+                "List_rows_between_Yesterday_and_Today": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "70ec5467-33cc-4dea-ae7d-9e9ca96b06ce"
+              }
+            },
+            "For_each_Organisation": {
+              "type": "Foreach",
+              "foreach": "@variables('organisation')",
+              "actions": {
+                "Filter_rows_": {
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@outputs('List_rows_between_Yesterday_and_Today')?['body/value']",
+                    "where": "@equals(item()?['_new_organisation_value'],items('For_each_Organisation'))"
+                  },
+                  "metadata": {
+                    "operationMetadataId": "3d422e34-bb38-4467-96bc-085ebcc14b64"
+                  }
+                },
+                "Parse_JSON_Results": {
+                  "type": "ParseJson",
+                  "inputs": {
+                    "content": "@body('Filter_rows_')",
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "@@odata.type": {
+                            "type": "string"
+                          },
+                          "@@odata.id": {
+                            "type": "string"
+                          },
+                          "@@odata.etag": {
+                            "type": "string"
+                          },
+                          "@@odata.editLink": {
+                            "type": "string"
+                          },
+                          "new_name": {
+                            "type": "string"
+                          },
+                          "new_accountcardsid@odata.type": {
+                            "type": "string"
+                          },
+                          "new_accountcardsid": {
+                            "type": "string"
+                          },
+                          "_new_organisation_value@OData.Community.Display.V1.FormattedValue": {
+                            "type": "string"
+                          },
+                          "_new_organisation_value@Microsoft.Dynamics.CRM.associatednavigationproperty": {
+                            "type": "string"
+                          },
+                          "_new_organisation_value@Microsoft.Dynamics.CRM.lookuplogicalname": {
+                            "type": "string"
+                          },
+                          "_new_organisation_value@odata.type": {
+                            "type": "string"
+                          },
+                          "_new_organisation_value": {
+                            "type": "string"
+                          },
+                          "createdon@OData.Community.Display.V1.FormattedValue": {
+                            "type": "string"
+                          },
+                          "createdon@odata.type": {
+                            "type": "string"
+                          },
+                          "createdon": {
+                            "type": "string"
+                          },
+                          "new_Organisation@odata.associationLink": {
+                            "type": "string"
+                          },
+                          "new_Organisation@odata.navigationLink": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "@@odata.type",
+                          "@@odata.id",
+                          "@@odata.etag",
+                          "@@odata.editLink",
+                          "new_accountcardsid@odata.type",
+                          "new_accountcardsid",
+                          "_new_organisation_value@OData.Community.Display.V1.FormattedValue",
+                          "_new_organisation_value@Microsoft.Dynamics.CRM.associatednavigationproperty",
+                          "_new_organisation_value@Microsoft.Dynamics.CRM.lookuplogicalname",
+                          "_new_organisation_value@odata.type",
+                          "_new_organisation_value",
+                          "createdon@OData.Community.Display.V1.FormattedValue",
+                          "createdon@odata.type",
+                          "createdon",
+                          "new_Organisation@odata.associationLink",
+                          "new_Organisation@odata.navigationLink"
+                        ]
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Filter_rows_": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "56b69151-af64-4ff4-ae53-7efaddfb1223"
+                  }
+                },
+                "Select_accountNumbers": {
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Parse_JSON_Results')",
+                    "select": "@item()?['new_name']"
+                  },
+                  "runAfter": {
+                    "Parse_JSON_Results": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "5606eecf-df92-49f3-9610-111eea7c819c"
+                  }
+                },
+                "Dummy": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "not": {
+                          "equals": [
+                            "@outputs('SP_CreateNotification-copy')?['body/returncode']",
+                            404
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  "actions": {},
+                  "else": {
+                    "actions": {}
+                  },
+                  "runAfter": {
+                    "SP_CreateNotification-copy": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "bff347a7-78b9-4e12-8dde-db4da4776725"
+                  }
+                },
+                "SP_CreateNotification-copy": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "server": "default",
+                      "database": "default",
+                      "procedure": "[notifications].[CreateNotification]",
+                      "parameters/actionLink": "/accountcards?filter=@{variables('yesterday')},@{variables('today')}",
+                      "parameters/content": "@{length(body('Select_accountNumbers'))} account cards created between @{formatDateTime(variables('yesterday'),'dd/MM/yyyy')}  and @{formatDateTime(variables('today'),'dd/MM/yyyy')} ",
+                      "parameters/notificationId": "@first(body('Filter_NoticiationTypes'))['Id']",
+                      "parameters/organisationId": "@items('For_each_Organisation')",
+                      "parameters/title": "Account Cards Created @{formatDateTime(variables('yesterday'),'dd MMM yyyy')}"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                      "operationId": "ExecuteProcedure_V2",
+                      "connectionName": "shared_sql"
+                    }
+                  },
+                  "runAfter": {
+                    "Select_accountNumbers": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "ec588837-12a0-41e2-aea7-32fb7894bdca"
+                  }
+                }
+              },
+              "runAfter": {
+                "Set_Organisation": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "dc5cf755-562a-418d-850b-784d7ea1c427"
+              }
+            },
+            "Set_NotificationTypeId": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "NotificationTypeId",
+                "value": "@first(body('Filter_NoticiationTypes'))['Title']"
+              },
+              "runAfter": {
+                "Filter_NoticiationTypes": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "4cda3e61-d0b7-4c8b-b614-9ea52b07dde3"
+              }
+            },
+            "Set_Organisation": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "organisation",
+                "value": "@union(body('Select_Organisations'),body('Select_Organisations'))"
+              },
+              "runAfter": {
+                "Select_Organisations": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e034ba09-9a1b-4bad-ab44-e76e9960bfa1"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_Organisation": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b7ba3218-81bc-427b-821a-d72aa6d07784"
+          }
+        },
+        "Send_error_report": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "emailMessage/To": "@parameters('EmailErrorReport (new_EmailErrorReport)')",
+              "emailMessage/Subject": "Flow error",
+              "emailMessage/Body": "<p class=\"editor-paragraph\">Cloud Flow PortalNotificationsContractsCloseToExpiration did a Fail run in  environment.</p><p class=\"editor-paragraph\">Please check run history.</p>",
+              "emailMessage/Importance": "Normal"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+              "operationId": "SendEmailV2",
+              "connectionName": "shared_office365"
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "f2fbfc78-7fc7-4989-9e65-19f2eb4dec0a"
+          }
+        },
+        "Initialize_NotificationType_Name": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "NotificationTypeName",
+                "type": "string",
+                "value": "Account Cards"
+              }
+            ]
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "b21543ad-60e8-4d13-a3be-65e4d689d285"
+          }
+        },
+        "Initialize_NotificationTypeId": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "NotificationTypeId",
+                "type": "string"
+              }
+            ]
+          },
+          "runAfter": {
+            "Initialize_NotificationType_Name": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c18c5b99-35f3-4caa-88ef-3282540db06d"
+          }
+        },
+        "initialize_Today": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "today",
+                "type": "string",
+                "value": "@utcNow()"
+              }
+            ]
+          },
+          "runAfter": {
+            "Initialize_NotificationTypeId": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b77e6024-9562-4128-b544-a44c106945bc"
+          }
+        },
+        "Initialize_Yesterday": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "yesterday",
+                "type": "string",
+                "value": "@getPastTime(1,'Day')"
+              }
+            ]
+          },
+          "runAfter": {
+            "initialize_Today": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "9048d568-7686-44d9-b143-676f564e9ce9"
+          }
+        },
+        "Initialize_Organisation": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "organisation",
+                "type": "array"
+              }
+            ]
+          },
+          "runAfter": {
+            "Initialize_Yesterday": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c70098f8-7970-4e72-89ba-10226550c2d1"
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

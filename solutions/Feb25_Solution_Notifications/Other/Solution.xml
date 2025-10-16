@@ -1,0 +1,171 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ImportExportXml version="9.2.25093.154" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.25093.154" OrganizationSchemaType="Full" CRMServerServiceabilityVersion="9.2.25093.00154">
+  <SolutionManifest>
+    <UniqueName>Feb25_Solution_Notifications</UniqueName>
+    <LocalizedNames>
+      <LocalizedName description="Quantum Flows" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions />
+    <Version>1.0.0.17</Version>
+    <Managed>0</Managed>
+    <Publisher>
+      <UniqueName>DefaultPublisherinprovagroup</UniqueName>
+      <LocalizedNames>
+        <LocalizedName description="Default Publisher for inprovagroup" languagecode="1033" />
+      </LocalizedNames>
+      <Descriptions>
+        <Description description="Default publisher for this organization" languagecode="1033" />
+      </Descriptions>
+      <EMailAddress xsi:nil="true"></EMailAddress>
+      <SupportingWebsiteUrl xsi:nil="true"></SupportingWebsiteUrl>
+      <CustomizationPrefix>new</CustomizationPrefix>
+      <CustomizationOptionValuePrefix>10000</CustomizationOptionValuePrefix>
+      <Addresses>
+        <Address>
+          <AddressNumber>1</AddressNumber>
+          <AddressTypeCode xsi:nil="true"></AddressTypeCode>
+          <City xsi:nil="true"></City>
+          <County xsi:nil="true"></County>
+          <Country xsi:nil="true"></Country>
+          <Fax xsi:nil="true"></Fax>
+          <FreightTermsCode xsi:nil="true"></FreightTermsCode>
+          <ImportSequenceNumber xsi:nil="true"></ImportSequenceNumber>
+          <Latitude xsi:nil="true"></Latitude>
+          <Line1 xsi:nil="true"></Line1>
+          <Line2 xsi:nil="true"></Line2>
+          <Line3 xsi:nil="true"></Line3>
+          <Longitude xsi:nil="true"></Longitude>
+          <Name xsi:nil="true"></Name>
+          <PostalCode xsi:nil="true"></PostalCode>
+          <PostOfficeBox xsi:nil="true"></PostOfficeBox>
+          <PrimaryContactName xsi:nil="true"></PrimaryContactName>
+          <ShippingMethodCode xsi:nil="true"></ShippingMethodCode>
+          <StateOrProvince xsi:nil="true"></StateOrProvince>
+          <Telephone1 xsi:nil="true"></Telephone1>
+          <Telephone2 xsi:nil="true"></Telephone2>
+          <Telephone3 xsi:nil="true"></Telephone3>
+          <TimeZoneRuleVersionNumber xsi:nil="true"></TimeZoneRuleVersionNumber>
+          <UPSZone xsi:nil="true"></UPSZone>
+          <UTCOffset xsi:nil="true"></UTCOffset>
+          <UTCConversionTimeZoneCode xsi:nil="true"></UTCConversionTimeZoneCode>
+        </Address>
+        <Address>
+          <AddressNumber>2</AddressNumber>
+          <AddressTypeCode xsi:nil="true"></AddressTypeCode>
+          <City xsi:nil="true"></City>
+          <County xsi:nil="true"></County>
+          <Country xsi:nil="true"></Country>
+          <Fax xsi:nil="true"></Fax>
+          <FreightTermsCode xsi:nil="true"></FreightTermsCode>
+          <ImportSequenceNumber xsi:nil="true"></ImportSequenceNumber>
+          <Latitude xsi:nil="true"></Latitude>
+          <Line1 xsi:nil="true"></Line1>
+          <Line2 xsi:nil="true"></Line2>
+          <Line3 xsi:nil="true"></Line3>
+          <Longitude xsi:nil="true"></Longitude>
+          <Name xsi:nil="true"></Name>
+          <PostalCode xsi:nil="true"></PostalCode>
+          <PostOfficeBox xsi:nil="true"></PostOfficeBox>
+          <PrimaryContactName xsi:nil="true"></PrimaryContactName>
+          <ShippingMethodCode xsi:nil="true"></ShippingMethodCode>
+          <StateOrProvince xsi:nil="true"></StateOrProvince>
+          <Telephone1 xsi:nil="true"></Telephone1>
+          <Telephone2 xsi:nil="true"></Telephone2>
+          <Telephone3 xsi:nil="true"></Telephone3>
+          <TimeZoneRuleVersionNumber xsi:nil="true"></TimeZoneRuleVersionNumber>
+          <UPSZone xsi:nil="true"></UPSZone>
+          <UTCOffset xsi:nil="true"></UTCOffset>
+          <UTCConversionTimeZoneCode xsi:nil="true"></UTCConversionTimeZoneCode>
+        </Address>
+      </Addresses>
+    </Publisher>
+    <RootComponents>
+      <RootComponent type="29" id="{03afafa1-02f9-ef11-bae3-6045bd9cdf46}" behavior="0" />
+      <RootComponent type="29" id="{14ec974a-4592-f011-b4cc-6045bd9367c9}" behavior="0" />
+      <RootComponent type="29" id="{163ae5a6-9bce-ef11-b8e8-6045bd979bd6}" behavior="0" />
+      <RootComponent type="29" id="{60d23875-3f66-f011-bec3-6045bd9367c9}" behavior="0" />
+      <RootComponent type="29" id="{68ddcfbc-d087-f011-b4cc-6045bd9cdf46}" behavior="0" />
+      <RootComponent type="29" id="{7085e962-1e20-f011-998a-6045bd9367c9}" behavior="0" />
+      <RootComponent type="29" id="{88dae36e-15a5-f011-bbd3-7ced8d0f33cc}" behavior="0" />
+      <RootComponent type="29" id="{a3fdfa40-b337-f011-8c4d-6045bd9367c9}" behavior="0" />
+      <RootComponent type="29" id="{a4099844-4848-f011-877a-6045bd9cdf46}" behavior="0" />
+      <RootComponent type="29" id="{bc20db0a-ceb7-ef11-b8e8-7c1e5275a0a0}" behavior="0" />
+      <RootComponent type="29" id="{d78793bc-d087-f011-b4cc-6045bd9367c9}" behavior="0" />
+      <RootComponent type="29" id="{d88793bc-d087-f011-b4cc-6045bd9367c9}" behavior="0" />
+      <RootComponent type="29" id="{e2d0a817-b05c-f011-bec2-6045bd9367c9}" behavior="0" />
+      <RootComponent type="29" id="{eae1e2b7-0242-f011-877a-6045bd9cdf46}" behavior="0" />
+      <RootComponent type="29" id="{f40414a4-2ede-ef11-a730-7c1e525e2779}" behavior="0" />
+      <RootComponent type="29" id="{fc352f62-1e20-f011-998a-6045bd9cdf46}" behavior="0" />
+    </RootComponents>
+    <MissingDependencies>
+      <MissingDependency>
+        <Required type="1" schemaName="adx_sitesetting" displayName="Site Setting" solution="MicrosoftPortalDependencies (9.3.2307.1)">
+          <package appName="Portal Solution" version="9.3.2209.79">StarterPortal (9.3.2209.79)</package>
+          <package appName="Portal Add-On" version="9.2.2008.0">CommunityPortal (9.2.2008.0)</package>
+          <package appName="Portal Add-On" version="9.2.2008.0">CustomerPortal (9.2.2008.0)</package>
+          <package appName="CDS Base Portal Package" version="9.3.2505.191">CDSBasePortal (9.3.2505.191)</package>
+        </Required>
+        <Dependent type="29" displayName="PortalNotificationsContractDocuments" id="{a3fdfa40-b337-f011-8c4d-6045bd9367c9}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="1" schemaName="adx_sitesetting" displayName="Site Setting" solution="MicrosoftPortalDependencies (9.3.2307.1)">
+          <package appName="Portal Solution" version="9.3.2209.79">StarterPortal (9.3.2209.79)</package>
+          <package appName="Portal Add-On" version="9.2.2008.0">CommunityPortal (9.2.2008.0)</package>
+          <package appName="Portal Add-On" version="9.2.2008.0">CustomerPortal (9.2.2008.0)</package>
+          <package appName="CDS Base Portal Package" version="9.3.2505.191">CDSBasePortal (9.3.2505.191)</package>
+        </Required>
+        <Dependent type="29" displayName="PortalNotificationsContractDocuments_V2" id="{e2d0a817-b05c-f011-bec2-6045bd9367c9}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="1" schemaName="new_accountcards" displayName="Account Cards" solution="Active" />
+        <Dependent type="29" displayName="PortalDeactivateAccountCardOnDate" id="{7085e962-1e20-f011-998a-6045bd9367c9}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="1" schemaName="new_accountcards" displayName="Account Cards" solution="Active" />
+        <Dependent type="29" displayName="PortalAccountCardCreate" id="{88dae36e-15a5-f011-bbd3-7ced8d0f33cc}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="1" schemaName="new_accountcards" displayName="Account Cards" solution="Active" />
+        <Dependent type="29" displayName="PortalNotificationsNewAccountCards" id="{bc20db0a-ceb7-ef11-b8e8-7c1e5275a0a0}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="1" schemaName="new_accountcards" displayName="Account Cards" solution="Active" />
+        <Dependent type="29" displayName="PortalAccountCardUpdate" id="{fc352f62-1e20-f011-998a-6045bd9cdf46}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="1" schemaName="new_agreement" displayName="Contracts/ Renewals" solution="Active" />
+        <Dependent type="29" displayName="PortalNotificationsTransactionFileUploads" id="{03afafa1-02f9-ef11-bae3-6045bd9cdf46}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="1" schemaName="new_agreement" displayName="Contracts/ Renewals" solution="Active" />
+        <Dependent type="29" displayName="PortalRequestRenewal" id="{14ec974a-4592-f011-b4cc-6045bd9367c9}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="1" schemaName="new_agreement" displayName="Contracts/ Renewals" solution="Active" />
+        <Dependent type="29" displayName="PortalNotificationsContractsCloseToExpiration" id="{163ae5a6-9bce-ef11-b8e8-6045bd979bd6}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="1" schemaName="new_agreement" displayName="Contracts/ Renewals" solution="Active" />
+        <Dependent type="29" displayName="PortalAgreementUpdate" id="{60d23875-3f66-f011-bec3-6045bd9367c9}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="1" schemaName="new_agreement" displayName="Contracts/ Renewals" solution="Active" />
+        <Dependent type="29" displayName="PortalBasketOptimiserNotification_Framework" id="{68ddcfbc-d087-f011-b4cc-6045bd9cdf46}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="1" schemaName="new_agreement" displayName="Contracts/ Renewals" solution="Active" />
+        <Dependent type="29" displayName="PortalNotificationsContractDocuments" id="{a3fdfa40-b337-f011-8c4d-6045bd9367c9}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="1" schemaName="new_agreement" displayName="Contracts/ Renewals" solution="Active" />
+        <Dependent type="29" displayName="PortalNotificationsContractDocuments_V2" id="{e2d0a817-b05c-f011-bec2-6045bd9367c9}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="1" schemaName="opportunity" displayName="Opportunity" solution="msdynce_Sales (9.0.4.0076)">
+          <package appName="msdynce_Sales" version="9.0.25093.10007">msdynce_SalesAnchor (9.0.25093.10007)</package>
+        </Required>
+        <Dependent type="29" displayName="PortalRequestRenewal" id="{14ec974a-4592-f011-b4cc-6045bd9367c9}" />
+      </MissingDependency>
+    </MissingDependencies>
+  </SolutionManifest>
+</ImportExportXml>

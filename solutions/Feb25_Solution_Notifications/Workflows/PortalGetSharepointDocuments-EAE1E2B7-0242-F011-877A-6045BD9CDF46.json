@@ -1,0 +1,139 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline": {
+        "api": {
+          "name": "shared_sharepointonline"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsharepointonline_1c93b"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_commondataserviceforapps-1": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_2acba"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "staticResults": {
+        "Get_files_(properties_only)0": {
+          "status": "Succeeded",
+          "outputs": {
+            "statusCode": "OK",
+            "headers": {}
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Http",
+          "inputs": {
+            "triggerAuthenticationType": "All",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "agreementid": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "02274b34-354a-45b2-91f0-29f2b3bd7004"
+          }
+        }
+      },
+      "actions": {
+        "Get_files_(properties_only)": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "dataset": "https://inprovayammer.sharepoint.com/sites/crmcollection/crm",
+              "table": "6fa35cb7-df4e-4d36-ba0b-15c21b19dfb5",
+              "folderPath": "@first(outputs('List_folder_by_regardingobjectid')?['body/value'])['relativeurl']"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "operationId": "GetFileItems",
+              "connectionName": "shared_sharepointonline"
+            }
+          },
+          "runAfter": {
+            "List_folder_by_regardingobjectid": [
+              "Succeeded"
+            ]
+          },
+          "runtimeConfiguration": {
+            "staticResult": {
+              "staticResultOptions": "Disabled",
+              "name": "Get_files_(properties_only)0"
+            },
+            "paginationPolicy": {
+              "minimumItemCount": 5000
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "7c2f8209-601b-4141-aad4-08deb3af4a0a"
+          }
+        },
+        "Response": {
+          "type": "Response",
+          "kind": "Http",
+          "inputs": {
+            "statusCode": 200,
+            "body": "@outputs('Get_files_(properties_only)')?['body/value']"
+          },
+          "runAfter": {
+            "Get_files_(properties_only)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "671371fd-a671-44ca-b155-296eb7aad20d"
+          }
+        },
+        "List_folder_by_regardingobjectid": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "sharepointdocumentlocations",
+              "fetchXml": "<fetch>\n  <entity name=\"sharepointdocumentlocation\">\n    <filter>\n      <condition attribute=\"regardingobjectid\" operator=\"eq\" value=\"@{triggerBody()?['agreementid']}\" />\n    </filter>\n  </entity>\n</fetch>",
+              "$top": 1
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "connectionName": "shared_commondataserviceforapps-1"
+            }
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "74e465c9-09e7-403f-9cb7-5b81b7a0f906"
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

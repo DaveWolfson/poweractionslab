@@ -1,0 +1,239 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps-1": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_00685"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Http",
+          "inputs": {
+            "triggerAuthenticationType": "All",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "new_accountcardsid": {
+                  "type": "string"
+                },
+                "new_carddeliveryaddress": {
+                  "type": "string"
+                },
+                "new_dailycardlimit": {
+                  "type": "number"
+                },
+                "new_deactivatecard": {
+                  "type": "boolean"
+                },
+                "new_division": {
+                  "type": "string"
+                },
+                "new_employeeid": {
+                  "type": "string"
+                },
+                "new_issuedtoforename": {
+                  "type": "string"
+                },
+                "new_issuedtosurname": {
+                  "type": "string"
+                },
+                "new_jobtitle": {
+                  "type": "string"
+                },
+                "new_manager": {
+                  "type": "string"
+                },
+                "new_suppliers": {
+                  "type": "string"
+                },
+                "new_trade": {
+                  "type": "number"
+                },
+                "new_worktype": {
+                  "type": "string"
+                },
+                "new_transactioncardlimit": {
+                  "type": "number"
+                },
+                "new_AKW": {
+                  "type": "boolean"
+                },
+                "new_Bradfords": {
+                  "type": "boolean"
+                },
+                "new_CityElectricalFactors": {
+                  "type": "boolean"
+                },
+                "new_CityPlumbingSupplies": {
+                  "type": "boolean"
+                },
+                "new_CBrewer": {
+                  "type": "boolean"
+                },
+                "new_Denman": {
+                  "type": "boolean"
+                },
+                "new_EdmundsonElectrical": {
+                  "type": "boolean"
+                },
+                "new_FarrHarris": {
+                  "type": "boolean"
+                },
+                "new_GibbsDandy": {
+                  "type": "boolean"
+                },
+                "new_Grafton": {
+                  "type": "boolean"
+                },
+                "new_Graham": {
+                  "type": "boolean"
+                },
+                "new_HuwsGray": {
+                  "type": "boolean"
+                },
+                "new_Jasonic": {
+                  "type": "boolean"
+                },
+                "new_Jewson": {
+                  "type": "boolean"
+                },
+                "new_JohnCribbSons": {
+                  "type": "boolean"
+                },
+                "new_PHCParts": {
+                  "type": "boolean"
+                },
+                "new_Plumbase": {
+                  "type": "boolean"
+                },
+                "new_Rexel": {
+                  "type": "boolean"
+                },
+                "new_RobertPrice": {
+                  "type": "boolean"
+                },
+                "new_SmithFrater": {
+                  "type": "boolean"
+                },
+                "new_TravisPerkins": {
+                  "type": "boolean"
+                },
+                "new_Wolseley": {
+                  "type": "boolean"
+                },
+                "new_organisation": {
+                  "type": "string"
+                },
+                "new_deactivationdate": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "acf4bb97-744a-4127-8890-6ee24d9b431d"
+          }
+        }
+      },
+      "actions": {
+        "Update_a_row": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "new_accountcardses",
+              "recordId": "@triggerBody()?['new_accountcardsid']",
+              "item/new_akw": "@triggerBody()?['new_AKW']",
+              "item/new_bradfords": "@triggerBody()?['new_Bradfords']",
+              "item/new_cbrewer": "@triggerBody()?['new_CBrewer']",
+              "item/new_carddeliveryaddress": "@triggerBody()?['new_carddeliveryaddress']",
+              "item/new_cityelectricalfactors": "@triggerBody()?['new_CityElectricalFactors']",
+              "item/new_cityplumbingsupplies": "@triggerBody()?['new_CityPlumbingSupplies']",
+              "item/new_dailycardlimit": "@triggerBody()?['new_dailycardlimit']",
+              "item/new_deactivatecard": "@triggerBody()?['new_deactivatecard']",
+              "item/new_deactivationdate": "@triggerBody()?['new_deactivationdate']",
+              "item/new_denman": "@triggerBody()?['new_Denman']",
+              "item/new_division": "@triggerBody()?['new_division']",
+              "item/new_edmundsonelectrical": "@triggerBody()?['new_EdmundsonElectrical']",
+              "item/new_employeeid": "@triggerBody()?['new_employeeid']",
+              "item/new_farrharris": "@triggerBody()?['new_FarrHarris']",
+              "item/new_issuedtoforename": "@triggerBody()?['new_issuedtoforename']",
+              "item/new_gibbsdandy": "@triggerBody()?['new_GibbsDandy']",
+              "item/new_grafton": "@triggerBody()?['new_Grafton']",
+              "item/new_graham": "@triggerBody()?['new_Graham']",
+              "item/new_huwsgray": "@triggerBody()?['new_HuwsGray']",
+              "item/new_jasonic": "@triggerBody()?['new_Jasonic']",
+              "item/new_jewson": "@triggerBody()?['new_Jewson']",
+              "item/new_jobtitle": "@triggerBody()?['new_jobtitle']",
+              "item/new_johncribbsons": "@triggerBody()?['new_JohnCribbSons']",
+              "item/new_issuedtosurname": "@triggerBody()?['new_issuedtosurname']",
+              "item/new_manager": "@triggerBody()?['new_manager']",
+              "item/new_Organisation@odata.bind": "accounts(@{triggerBody()?['new_organisation']})",
+              "item/new_phcparts": "@triggerBody()?['new_PHCParts']",
+              "item/new_plumbase": "@triggerBody()?['new_Plumbase']",
+              "item/new_rexel": "@triggerBody()?['new_Rexel']",
+              "item/new_robertprice": "@triggerBody()?['new_RobertPrice']",
+              "item/new_smithfrater": "@triggerBody()?['new_SmithFrater']",
+              "item/new_suppliers": "@triggerBody()?['new_suppliers']",
+              "item/new_trade": "@triggerBody()?['new_trade']",
+              "item/new_transactioncardlimit": "@triggerBody()?['new_transactioncardlimit']",
+              "item/new_travisperkins": "@triggerBody()?['new_TravisPerkins']",
+              "item/new_wolseley": "@triggerBody()?['new_Wolseley']",
+              "item/new_worktype": "@triggerBody()?['new_worktype']"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "UpdateRecord",
+              "connectionName": "shared_commondataserviceforapps-1"
+            }
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "0375683a-cf49-46be-9641-86f956fe0b91"
+          }
+        },
+        "Response": {
+          "type": "Response",
+          "kind": "Http",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "ResponseText": "Account Card updated.",
+              "FeedbackId": "@triggerBody()?['new_accountcardsid']"
+            }
+          },
+          "runAfter": {
+            "Update_a_row": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "d3b3dc22-651b-4fe0-a80d-9744dce29a11"
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

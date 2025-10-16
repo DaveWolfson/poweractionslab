@@ -1,0 +1,597 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sql": {
+        "api": {
+          "name": "shared_sql"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsql_9443d"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_commondataserviceforapps-1": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_2acba"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_powerplatformforadmins": {
+        "api": {
+          "name": "shared_powerplatformforadmins"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedpowerplatformforadmins_596ec"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_office365_1": {
+        "api": {
+          "name": "shared_office365"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedoffice365_2395b"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "undefined",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "EmailErrorReport (new_EmailErrorReport)": {
+          "defaultValue": "dlopez@inprova.com",
+          "type": "String",
+          "metadata": {
+            "schemaName": "new_EmailErrorReport"
+          }
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "type": "Recurrence",
+          "recurrence": {
+            "frequency": "Week",
+            "interval": 1,
+            "startTime": "2024-12-02T02:00:00Z",
+            "schedule": {
+              "weekDays": [
+                "Monday"
+              ]
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "212b279f-f614-4226-b3dc-036b3cc8ce5b"
+          }
+        }
+      },
+      "actions": {
+        "Try": {
+          "type": "Scope",
+          "actions": {
+            "SP_GetNotificationTypes": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "server": "default",
+                  "database": "default",
+                  "procedure": "[notifications].[GetNotificationTypes]"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                  "operationId": "ExecuteProcedure_V2",
+                  "connectionName": "shared_sql"
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "d27891d7-8817-4c93-99ce-4e9134c136fe"
+              }
+            },
+            "Parse_JSON_NotificationTypes": {
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@outputs('SP_GetNotificationTypes')?['body/outputparameters/NotificationTypesJson']",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "Id": {
+                        "type": "string"
+                      },
+                      "Title": {
+                        "type": "string"
+                      },
+                      "Category": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "Id",
+                      "Title",
+                      "Category"
+                    ]
+                  }
+                }
+              },
+              "runAfter": {
+                "SP_GetNotificationTypes": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "21a11fd8-0a38-4d65-8b30-bcb3047d0069"
+              }
+            },
+            "Filter_NoticiationTypes": {
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Parse_JSON_NotificationTypes')",
+                "where": "@equals(item()['Title'],variables('NotificationTypeName'))"
+              },
+              "runAfter": {
+                "Parse_JSON_NotificationTypes": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "6c98a590-371e-462a-aa8a-2b3c3a21f518"
+              }
+            },
+            "List_contracts_expiring_between_Today_and_3_months_KILLKILLKILL": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "entityName": "new_agreements",
+                  "fetchXml": "<fetch>\n  <entity name=\"new_agreement\">\n     <attribute name=\"new_agreementreference\" />\n    <attribute name=\"new_agreementname\" />\n    <attribute name=\"new_expiryincallextensions\" />\n    <attribute name=\"new_renewalstatus\" />\n    <attribute name=\"new_member\" />\n    <filter type=\"and\">\n      <condition attribute=\"new_expiryincallextensions\" operator=\"between\">\n        <value>@{variables('today')}</value>\n        <value>@{variables('yesterday')}</value>\n      </condition>\n     <filter type=\"or\"> \n          <condition attribute=\"statuscode\" operator=\"eq\" value=\"100000002\" /> <!-- Trading -->\n          <condition attribute=\"statuscode\" operator=\"eq\" value=\"1\" /> <!-- Awaiting Trade-->\n      </filter>\n      <filter type=\"or\">\n          <condition attribute=\"new_renewalstatus\" operator=\"eq\" value=\"100000002\" /> <!-- Decision Pending -->\n          <condition attribute=\"new_renewalstatus\" operator=\"null\" value=\"\" /><!-- empty -->\n     </filter> \n    </filter>\n  </entity>\n</fetch>"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "connectionName": "shared_commondataserviceforapps-1"
+                }
+              },
+              "runAfter": {
+                "Set_NotificationTypeId": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f157f96f-8f83-4d77-9d2c-fff133729deb"
+              }
+            },
+            "Select_Organisations": {
+              "type": "Select",
+              "inputs": {
+                "from": "@outputs('List_contracts_expiring_between_Today_and_3_months_KILLKILLKILL')?['body/value']",
+                "select": "@item()?['_new_member_value']"
+              },
+              "runAfter": {
+                "Get_Transaction_File_Uploads": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "70ec5467-33cc-4dea-ae7d-9e9ca96b06ce"
+              }
+            },
+            "For_each_Organisation": {
+              "type": "Foreach",
+              "foreach": "@variables('organisation')",
+              "actions": {
+                "Parse_JSON_Results": {
+                  "type": "ParseJson",
+                  "inputs": {
+                    "content": "@body('Filter_array')",
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "@@odata.type": {
+                            "type": "string"
+                          },
+                          "@@odata.id": {
+                            "type": "string"
+                          },
+                          "@@odata.etag": {
+                            "type": "string"
+                          },
+                          "@@odata.editLink": {
+                            "type": "string"
+                          },
+                          "new_agreementreference": {
+                            "type": "string"
+                          },
+                          "new_agreementname": {
+                            "type": "string"
+                          },
+                          "new_expiryincallextensions@OData.Community.Display.V1.FormattedValue": {
+                            "type": "string"
+                          },
+                          "new_expiryincallextensions@odata.type": {
+                            "type": "string"
+                          },
+                          "new_expiryincallextensions": {
+                            "type": "string"
+                          },
+                          "_new_member_value@OData.Community.Display.V1.FormattedValue": {
+                            "type": "string"
+                          },
+                          "_new_member_value@Microsoft.Dynamics.CRM.associatednavigationproperty": {
+                            "type": "string"
+                          },
+                          "_new_member_value@Microsoft.Dynamics.CRM.lookuplogicalname": {
+                            "type": "string"
+                          },
+                          "_new_member_value@odata.type": {
+                            "type": "string"
+                          },
+                          "_new_member_value": {
+                            "type": "string"
+                          },
+                          "new_agreementid@odata.type": {
+                            "type": "string"
+                          },
+                          "new_agreementid": {
+                            "type": "string"
+                          },
+                          "new_Member@odata.associationLink": {
+                            "type": "string"
+                          },
+                          "new_Member@odata.navigationLink": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "@@odata.type",
+                          "@@odata.id",
+                          "@@odata.etag",
+                          "@@odata.editLink",
+                          "new_agreementreference",
+                          "new_agreementname",
+                          "new_expiryincallextensions@OData.Community.Display.V1.FormattedValue",
+                          "new_expiryincallextensions@odata.type",
+                          "new_expiryincallextensions",
+                          "_new_member_value@OData.Community.Display.V1.FormattedValue",
+                          "_new_member_value@Microsoft.Dynamics.CRM.associatednavigationproperty",
+                          "_new_member_value@Microsoft.Dynamics.CRM.lookuplogicalname",
+                          "_new_member_value@odata.type",
+                          "_new_member_value",
+                          "new_agreementid@odata.type",
+                          "new_agreementid",
+                          "new_Member@odata.associationLink",
+                          "new_Member@odata.navigationLink"
+                        ]
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Filter_array": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "56b69151-af64-4ff4-ae53-7efaddfb1223"
+                  }
+                },
+                "Select_accountNumbers": {
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Parse_JSON_Results')",
+                    "select": "@item()?['new_name']"
+                  },
+                  "runAfter": {
+                    "Parse_JSON_Results": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "5606eecf-df92-49f3-9610-111eea7c819c"
+                  }
+                },
+                "Dummy": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "not": {
+                          "equals": [
+                            "@outputs('SP_GetNotificationTypes')?['body/returncode']",
+                            404
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  "actions": {},
+                  "else": {
+                    "actions": {}
+                  },
+                  "runAfter": {
+                    "For_each": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "52af147e-5a13-4ae1-b69f-9320c615eaed"
+                  }
+                },
+                "Filter_array": {
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@outputs('List_contracts_expiring_between_Today_and_3_months_KILLKILLKILL')?['body/value']",
+                    "where": "@equals(item()?['_new_member_value'],items('For_each_Organisation'))"
+                  },
+                  "metadata": {
+                    "operationMetadataId": "d4e33fd3-ac79-479c-b510-308a3c10bcd2"
+                  }
+                },
+                "For_each": {
+                  "type": "Foreach",
+                  "foreach": "@outputs('Parse_JSON_Results')['body']",
+                  "actions": {
+                    "SP_CreateNotification": {
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "parameters": {
+                          "server": "default",
+                          "database": "default",
+                          "procedure": "[notifications].[CreateNotification]",
+                          "parameters/actionLink": "/membercontracts",
+                          "parameters/content": "Contract  @{items('For_each')['new_agreementreference']} is due to expire within the next 3 months on\n@{formatDateTime(items('For_each')['new_expiryincallextensions'],'dd/MM/yyyy')}. Please contract your account manager to review your contract.",
+                          "parameters/notificationId": "@first(body('Filter_NoticiationTypes'))['Id']",
+                          "parameters/organisationId": "@items('For_each_Organisation')",
+                          "parameters/title": "Contract Expiry"
+                        },
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                          "operationId": "ExecuteProcedure_V2",
+                          "connectionName": "shared_sql"
+                        }
+                      },
+                      "metadata": {
+                        "operationMetadataId": "7a7a58b7-b074-42ad-9ba8-a90d96ba85f8"
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Select_accountNumbers": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "f97c0904-aee1-41aa-b742-549cdbef0d83"
+                  }
+                }
+              },
+              "runAfter": {
+                "Set_Organisation": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "dc5cf755-562a-418d-850b-784d7ea1c427"
+              }
+            },
+            "Set_Organisation": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "organisation",
+                "value": "@union(body('Select_Organisations'),body('Select_Organisations'))"
+              },
+              "runAfter": {
+                "Select_Organisations": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "0b6a6c20-86b7-4eef-a933-39a2446cd3c7"
+              }
+            },
+            "Set_NotificationTypeId": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "NotificationTypeId",
+                "value": "@first(body('Filter_NoticiationTypes'))['Title']"
+              },
+              "runAfter": {
+                "Filter_NoticiationTypes": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "132e83c2-33f7-4a0d-bf9d-4ab458569274"
+              }
+            },
+            "Get_Transaction_File_Uploads": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "server": "default",
+                  "database": "default",
+                  "procedure": "[membertransactions].[GetMemberTransactionsExtract]"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                  "operationId": "ExecuteProcedure_V2",
+                  "connectionName": "shared_sql"
+                }
+              },
+              "runAfter": {
+                "List_contracts_expiring_between_Today_and_3_months_KILLKILLKILL": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f64792d6-fd8d-46d8-bcb5-8511ea3706a8"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_Organisation": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c26aa804-1348-4ff6-aadd-7f19ea75638f"
+          }
+        },
+        "Get_Environment_as_Admin": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "environment": "@workflow()['tags']['environmentName']",
+              "api-version": "2018-10-01"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerplatformforadmins",
+              "operationId": "GetSingleEnvironment",
+              "connectionName": "shared_powerplatformforadmins"
+            }
+          },
+          "runAfter": {
+            "Try": [
+              "TimedOut",
+              "Failed"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "54f94f62-7f28-44bd-adb4-450c16e23931"
+          }
+        },
+        "Send_an_email_(V2)": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "emailMessage/To": "@parameters('EmailErrorReport (new_EmailErrorReport)')",
+              "emailMessage/Subject": "Flow error",
+              "emailMessage/Body": "<p class=\"editor-paragraph\">Cloud Flow PortalNotificationsTransactionFileUploads did a Fail run in @{outputs('Get_Environment_as_Admin')?['body/name']} environment.</p><p class=\"editor-paragraph\">Please check run history.</p>",
+              "emailMessage/Importance": "Normal"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+              "operationId": "SendEmailV2",
+              "connectionName": "shared_office365_1"
+            }
+          },
+          "runAfter": {
+            "Get_Environment_as_Admin": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "37d1acb6-515d-4b7b-864c-b2b6aa181e39"
+          }
+        },
+        "Initialize_NotificationType_Name": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "NotificationTypeName",
+                "type": "string",
+                "value": "Transaction File Uploaded"
+              }
+            ]
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "b21543ad-60e8-4d13-a3be-65e4d689d285"
+          }
+        },
+        "initialize_Today": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "today",
+                "type": "string",
+                "value": "@utcNow()"
+              }
+            ]
+          },
+          "runAfter": {
+            "Initialize_NotificationTypeId": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b77e6024-9562-4128-b544-a44c106945bc"
+          }
+        },
+        "Initialize_Yesterday": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "yesterday",
+                "type": "string",
+                "value": "@getPastTime(1,'Day')"
+              }
+            ]
+          },
+          "runAfter": {
+            "initialize_Today": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "9048d568-7686-44d9-b143-676f564e9ce9"
+          }
+        },
+        "Initialize_Organisation": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "organisation",
+                "type": "array"
+              }
+            ]
+          },
+          "runAfter": {
+            "Initialize_Yesterday": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c70098f8-7970-4e72-89ba-10226550c2d1"
+          }
+        },
+        "Initialize_NotificationTypeId": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "NotificationTypeId",
+                "type": "string"
+              }
+            ]
+          },
+          "runAfter": {
+            "Initialize_NotificationType_Name": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "0ddc3432-3e14-499e-8f3c-4e3336e14310"
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

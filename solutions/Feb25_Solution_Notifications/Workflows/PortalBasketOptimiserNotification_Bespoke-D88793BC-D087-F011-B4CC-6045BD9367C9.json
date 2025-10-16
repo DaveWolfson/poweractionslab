@@ -1,0 +1,197 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sql_2": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsql_c8903"
+        },
+        "api": {
+          "name": "shared_sql"
+        }
+      },
+      "shared_sql": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsql_af928"
+        },
+        "api": {
+          "name": "shared_sql"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2025-07-29T04:00:00Z"
+          },
+          "metadata": {
+            "operationMetadataId": "68a9cc93-d77c-4545-8dec-38bbd8fadfcc"
+          },
+          "type": "Recurrence"
+        }
+      },
+      "actions": {
+        "Initialize_variable": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "254d9df7-5048-4d10-bfc8-3ff7c59856f0"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "TargetDayMonth",
+                "type": "string",
+                "value": "@{formatDateTime(utcNow(),'dd-MM')}"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_Agreement_Date": {
+          "runAfter": {
+            "Initialize_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "2d6ff931-25b2-451b-832b-a2d94296554c"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Agreement Date",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Execute_a_SQL_query_to_fetch_Notification_Type": {
+          "runAfter": {
+            "Initialize_variable_Agreement_Date": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "24dea37c-bf46-40e9-aef9-54ce93c4f48a"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sql_2",
+              "operationId": "ExecutePassThroughNativeQuery_V2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql"
+            },
+            "parameters": {
+              "server": "default",
+              "database": "default",
+              "query/query": "select top 1 Id from notifications.NotificationType where Title='Optimise Your Basket'"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Initialize_variable_NotificationId": {
+          "runAfter": {
+            "Execute_a_SQL_query_to_fetch_Notification_Type": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "9f3d5b16-9c6e-423f-8e84-c6a9b19de50b"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "varNotificationId",
+                "type": "string",
+                "value": "@{first(outputs('Execute_a_SQL_query_to_fetch_Notification_Type')?['body/resultsets/Table1'])?['Id']}"
+              }
+            ]
+          }
+        },
+        "Execute_a_SQL_query_to_fetch_Notification_data": {
+          "runAfter": {
+            "Initialize_variable_NotificationId": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "4dcd6de1-cfd3-4c79-aa68-cf2481884fd9"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sql",
+              "operationId": "ExecutePassThroughNativeQuery_V2",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql"
+            },
+            "parameters": {
+              "server": "default",
+              "database": "icm$quantum$development",
+              "query/query": "SELECT \n\t\t\tm.MemberId\n\t\t,\tf.FrameworkId\n\t\t,\ts.SupplierId\n\t\t,\tbocpl.ContractReferenceNumber\n\t\t,\tboc.ContractCRMId\n\t\t,\tboc.ContractStartDate\n\t\t,\tf.FrameworkName -- Should this be Framework Category?\n\t\t,\ts.SupplierName\n\t\t,   bocpl.PriceListICMId\n\t\t, bor.BasketOptimisationRequestStatusId\n\t\t,bor.OpimisationDate\n\t\t,bor.OptimisedBy,\n\t\tDATEADD(DAY, -28, DATEADD(MONTH, -3, DATEFROMPARTS(YEAR(GETDATE()), MONTH(ContractStartDate), DAY(ContractStartDate))))as test\n\t\tFROM [quantum$icm].BasketOptimiserContractPriceList bocpl\n\t\tJOIN [quantum$icm].BasketOptimiserContract boc\n\t\t\tON  bocpl.MemberGroupEntityICMId = boc.MemberGroupEntityICMId\n\t\t\tAND bocpl.SupplierGroupEntityICMId = boc.SupplierGroupEntityICMId\n\t\t\tAND bocpl.FrameworkGroupEntityICMId = boc.FrameworkGroupEntityICMId\n\t\t\tAND bocpl.ContractReferenceNumber = boc.ContractReferenceNumber\n\t\tJOIN [quantum$basket].MemberOrganisationEntity moe\n\t\t\tON bocpl.MemberGroupEntityICMId = moe.MemberOrganisationEntityICMId\n\t\tJOIN dbo.Member m\n\t\t\tON moe.MemberNumber = m.MemberNumber\n\t\tJOIN dbo.PriceList pl\n\t\t\tON bocpl.PriceListICMId = pl.PriceListId\n\t\tJOIN dbo.SupplierCatalogue sc\n\t\t\tON sc.SupplierCatalogueId = pl.SupplierCatalogueId\n\t\tJOIN dbo.Supplier s\n\t\t\tON sc.SupplierId = s.SupplierId\n\t\tJOIN dbo.Framework f\n\t\t\tON sc.FrameworkId = f.FrameworkId\n\t\t\tLEFT JOIN dbo.BasketOptimisationRequest bor\n\t\t\t   ON bor.PricelistId=bocpl.PriceListICMId\n\t\twhere   MONTH(DATEADD(DAY, -28, DATEADD(MONTH, -3, ContractStartDate))) = MONTH(GETDATE())\n    AND DAY(DATEADD(DAY, -28, DATEADD(MONTH, -3, ContractStartDate))) = DAY(GETDATE())\n     AND bocpl.IsActiveContractFlag = 1\n\n\t\t"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Apply_to_each_3": {
+          "foreach": "@outputs('Execute_a_SQL_query_to_fetch_Notification_data')?['body/resultsets/Table1']",
+          "actions": {
+            "Execute_stored_procedure_(V2)": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "4709e00e-deaa-435b-8d12-8997f9d3c393"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sql_2",
+                  "operationId": "ExecuteProcedure_V2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql"
+                },
+                "parameters": {
+                  "server": "default",
+                  "database": "default",
+                  "procedure": "[notifications].[CreateNotification]",
+                  "parameters/actionLink": "/basketoptimiser",
+                  "parameters/content": "It’s time to optimise your basket",
+                  "parameters/notificationId": "@variables('varNotificationId')",
+                  "parameters/organisationId": "@items('Apply_to_each_3')?['ContractCRMId']",
+                  "parameters/title": "Optimise Your Basket"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {
+            "Execute_a_SQL_query_to_fetch_Notification_data": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c97f9a7f-4066-44bc-a040-b87781494886"
+          },
+          "type": "Foreach"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

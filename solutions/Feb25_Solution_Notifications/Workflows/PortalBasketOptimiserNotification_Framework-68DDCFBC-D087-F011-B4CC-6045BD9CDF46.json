@@ -1,0 +1,236 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps-1": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_2acba"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_sql": {
+        "api": {
+          "name": "shared_sql"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsql_9443d"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "type": "Recurrence",
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2025-07-29T04:00:00Z"
+          },
+          "metadata": {
+            "operationMetadataId": "68a9cc93-d77c-4545-8dec-38bbd8fadfcc"
+          }
+        }
+      },
+      "actions": {
+        "Initialize_variable": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "TargetDayMonth",
+                "type": "string",
+                "value": "@{formatDateTime(utcNow(),'dd-MM')}"
+              }
+            ]
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "254d9df7-5048-4d10-bfc8-3ff7c59856f0"
+          }
+        },
+        "Initialize_variable_Framework_StartDate": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "FrameworkStartDate",
+                "type": "string"
+              }
+            ]
+          },
+          "runAfter": {
+            "Initialize_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "2d6ff931-25b2-451b-832b-a2d94296554c"
+          }
+        },
+        "List_rows": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "new_agreements",
+              "fetchXml": "<fetch version=\"1.0\" output-format=\"xml-platform\" mapping=\"logical\" distinct=\"false\">\n  <entity name=\"new_agreement\">\n    <attribute name=\"new_agreementid\" />\n    <attribute name=\"new_pricelisttype\" />\n    <attribute name=\"new_startdate\" />\n    <attribute name=\"new_agreementname\" />\n    <attribute name=\"new_agreementreference\" />\n    <attribute name=\"new_member\" />    \n    <filter>\n      <condition attribute=\"new_pricelisttype\" operator=\"in\">\n        <value>100000002</value>\n        <value>100000000</value>\n      </condition>\n    </filter>\n    <link-entity name=\"new_framework\" from=\"new_frameworkid\" to=\"new_framework\" link-type=\"inner\" alias=\"framework\">\n      <attribute name=\"new_name\" />\n      <attribute name=\"new_startdate\" />\n      <filter type=\"and\">\n        <condition attribute=\"new_frameworkid\" operator=\"not-null\" />\n <condition attribute=\"new_startdate\" operator=\"not-null\" value=\"\" />\n      </filter>\n    </link-entity>\n    <link-entity name=\"account\" from=\"accountid\" to=\"new_supplier1\" link-type=\"outer\" alias=\"account\">\n      <attribute name=\"name\" />\n      <filter type=\"and\">\n        <condition attribute=\"accountid\" operator=\"not-null\" />\n      </filter>\n    </link-entity>\n  </entity>\n</fetch>"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "connectionName": "shared_commondataserviceforapps-1"
+            }
+          },
+          "runAfter": {
+            "Initialize_variable_NotificationId": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6afa9e96-43c0-4ce7-9468-65d5d939b51e"
+          }
+        },
+        "Apply_to_each": {
+          "type": "Foreach",
+          "foreach": "@outputs('List_rows')?['body/value']",
+          "actions": {
+            "Set_variable": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "FrameworkStartDate",
+                "value": "@{items('Apply_to_each')?['framework.new_startdate']}"
+              },
+              "metadata": {
+                "operationMetadataId": "9d90c8c3-5fd8-4786-a911-598f810ca036"
+              }
+            },
+            "Compose": {
+              "type": "Compose",
+              "inputs": "@formatDateTime(addToTime(variables('FrameworkStartDate'),-4,'Month'),'dd-MM')",
+              "runAfter": {
+                "Set_variable": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e849deae-7884-468a-bf63-15fb64f51d6a"
+              }
+            },
+            "Condition": {
+              "type": "If",
+              "expression": {
+                "equals": [
+                  "@outputs('Compose')",
+                  "@variables('TargetDayMonth')"
+                ]
+              },
+              "actions": {
+                "Execute_stored_procedure_(V2)": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "server": "default",
+                      "database": "default",
+                      "procedure": "[notifications].[CreateNotification]",
+                      "parameters/actionLink": "/basketoptimiser",
+                      "parameters/content": "It’s time to optimise your basket",
+                      "parameters/notificationId": "@variables('varNotificationId')",
+                      "parameters/organisationId": "@items('Apply_to_each')?['_new_member_value']",
+                      "parameters/title": "Optimise Your Basket"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                      "operationId": "ExecuteProcedure_V2",
+                      "connectionName": "shared_sql"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "0e0f9add-f856-4ef5-b6bd-244a028ee796"
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              },
+              "runAfter": {
+                "Compose": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "c8866311-cb83-45b7-9c84-73bdebad3ef6"
+              }
+            }
+          },
+          "runAfter": {
+            "List_rows": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c17b0ec2-65e8-458a-a2d6-3db4e8f3a6df"
+          }
+        },
+        "Execute_a_SQL_query_to_fetch_Notification_Type": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "server": "default",
+              "database": "default",
+              "query/query": "select top 1 Id from notifications.NotificationType where Title='Optimise Your Basket'"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+              "operationId": "ExecutePassThroughNativeQuery_V2",
+              "connectionName": "shared_sql"
+            }
+          },
+          "runAfter": {
+            "Initialize_variable_Framework_StartDate": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "24dea37c-bf46-40e9-aef9-54ce93c4f48a"
+          }
+        },
+        "Initialize_variable_NotificationId": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "varNotificationId",
+                "type": "string",
+                "value": "@{first(outputs('Execute_a_SQL_query_to_fetch_Notification_Type')?['body/resultsets/Table1'])?['Id']}"
+              }
+            ]
+          },
+          "runAfter": {
+            "Execute_a_SQL_query_to_fetch_Notification_Type": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "9f3d5b16-9c6e-423f-8e84-c6a9b19de50b"
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

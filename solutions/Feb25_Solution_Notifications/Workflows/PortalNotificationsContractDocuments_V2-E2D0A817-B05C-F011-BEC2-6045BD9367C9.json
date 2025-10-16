@@ -1,0 +1,413 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline": {
+        "api": {
+          "name": "shared_sharepointonline"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsharepointonline_1c93b"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_commondataserviceforapps": {
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedcommondataserviceforapps_7515c"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_sql-1": {
+        "api": {
+          "name": "shared_sql"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsql_c8903"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "type": "Recurrence",
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2025-06-18T02:00:00Z"
+          },
+          "metadata": {
+            "operationMetadataId": "31accb0d-e9e3-4a98-9cf3-6b0f48900ef7"
+          }
+        }
+      },
+      "actions": {
+        "Initialize_roleToCheck": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "roleToCheck",
+                "type": "array",
+                "value": [
+                  "Member",
+                  "Supplier"
+                ]
+              }
+            ]
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "bd5dcacf-8839-4d29-91fa-c1ba5121d3de"
+          }
+        },
+        "Apply_to_each_Role": {
+          "type": "Foreach",
+          "foreach": "@variables('roleToCheck')",
+          "actions": {
+            "Get_files_MetadataComplete_EQ_null": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "dataset": "https://inprovayammer.sharepoint.com/sites/crmcollection/crm",
+                  "table": "6fa35cb7-df4e-4d36-ba0b-15c21b19dfb5",
+                  "$filter": "MetadataComplete gt '@{getPastTime(1,'Day')}' and (VisibleTo eq 'All' or VisibleTo eq '@{items('Apply_to_each_Role')}')"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "operationId": "GetFileItems",
+                  "connectionName": "shared_sharepointonline"
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "3c13a469-5cd9-4ae5-b257-6a9b56221490"
+              }
+            },
+            "Select_distinct_folders": {
+              "type": "Compose",
+              "inputs": "@union(body('Select_folders_(normalised)'),body('Select_folders_(normalised)'))",
+              "runAfter": {
+                "Select_folders_(normalised)": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "d5845383-5da1-4b14-bc24-9c325d5f29c6"
+              }
+            },
+            "Select_folders_(normalised)": {
+              "type": "Select",
+              "inputs": {
+                "from": "@outputs('Get_files_MetadataComplete_EQ_null')?['body/value']",
+                "select": "@{replace(replace(item()?['{Path}'],'new_agreement',''),'/','')}"
+              },
+              "runAfter": {
+                "Get_files_MetadataComplete_EQ_null": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "8aecb444-e3c2-4453-b86f-c7f114bdc4e2"
+              }
+            },
+            "Apply_to_each_folder": {
+              "type": "Foreach",
+              "foreach": "@outputs('Select_distinct_folders')",
+              "actions": {
+                "Get_contract_details": {
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "entityName": "new_agreements",
+                      "fetchXml": "<fetch>\n  <entity name=\"new_agreement\">\n    <attribute name=\"new_agreementname\" />\n    <attribute name=\"new_member\" />\n    <filter>\n      <condition attribute=\"new_agreementname\" operator=\"eq\" value=\"@{items('Apply_to_each_folder')}\" />\n    </filter>\n  </entity>\n</fetch>"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "operationId": "ListRecords",
+                      "connectionName": "shared_commondataserviceforapps"
+                    }
+                  },
+                  "metadata": {
+                    "operationMetadataId": "8b0ea668-5724-4eec-98f9-6bf9c34d7ce0"
+                  }
+                },
+                "Is_the_right_DV": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "greater": [
+                          "@length(outputs('Get_contract_details')?['body/value'])",
+                          0
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Any_Contract_file": {
+                      "type": "If",
+                      "expression": {
+                        "and": [
+                          {
+                            "greater": [
+                              "@length(body('Filter_contract_documents'))",
+                              0
+                            ]
+                          }
+                        ]
+                      },
+                      "actions": {
+                        "SP_CreateNotification_contract": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "parameters": {
+                              "server": "default",
+                              "database": "default",
+                              "procedure": "[notifications].[CreateNotification]",
+                              "parameters/actionLink": "/membercontractedit/?agreementid=@{outputs('Get_contract_details')?['body/value']?[0]?['new_agreementid']}&documents=contract",
+                              "parameters/content": "Contract '@{outputs('Get_contract_details')?['body/value']?[0]?['new_agreementname']}' has @{length(body('Filter_contract_documents'))} new contract Documents",
+                              "parameters/notificationId": "@first(body('Filter_NoticiationTypes'))['Id']",
+                              "parameters/organisationId": "@outputs('Get_contract_details')?['body/value']?[0]?['_new_member_value']",
+                              "parameters/title": "New Documents"
+                            },
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                              "operationId": "ExecuteProcedure_V2",
+                              "connectionName": "shared_sql-1"
+                            }
+                          },
+                          "metadata": {
+                            "operationMetadataId": "7a7a58b7-b074-42ad-9ba8-a90d96ba85f8"
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {}
+                      },
+                      "runAfter": {
+                        "Filter_contract_documents": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "73639f8b-7d06-45eb-8e56-05c42533337a"
+                      }
+                    },
+                    "Any_Associated_file": {
+                      "type": "If",
+                      "expression": {
+                        "and": [
+                          {
+                            "greater": [
+                              "@length(body('Filter_associated_documents'))",
+                              0
+                            ]
+                          }
+                        ]
+                      },
+                      "actions": {
+                        "SP_CreateNotification_associated": {
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "parameters": {
+                              "server": "default",
+                              "database": "default",
+                              "procedure": "[notifications].[CreateNotification]",
+                              "parameters/actionLink": "/membercontractedit/?agreementid=@{outputs('Get_contract_details')?['body/value']?[0]?['new_agreementid']}&documents=associated",
+                              "parameters/content": "Contract '@{outputs('Get_contract_details')?['body/value']?[0]?['new_agreementname']}' has @{length(body('Filter_associated_documents'))} new associated Documents",
+                              "parameters/notificationId": "@first(body('Filter_NoticiationTypes'))['Id']",
+                              "parameters/organisationId": "@outputs('Get_contract_details')?['body/value']?[0]?['_new_member_value']",
+                              "parameters/title": "New Documents"
+                            },
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+                              "operationId": "ExecuteProcedure_V2",
+                              "connectionName": "shared_sql-1"
+                            }
+                          },
+                          "metadata": {
+                            "operationMetadataId": "7a7a58b7-b074-42ad-9ba8-a90d96ba85f8"
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {}
+                      },
+                      "runAfter": {
+                        "Filter_associated_documents": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "4f669ca3-6d58-4e7f-9221-869ddbeba36d"
+                      }
+                    },
+                    "Filter_contract_documents": {
+                      "type": "Query",
+                      "inputs": {
+                        "from": "@outputs('Get_files_MetadataComplete_EQ_null')?['body/value']",
+                        "where": "@and(contains(outputs('List_contractDocumentTypes')?['body/value'], item()?['DocumentType']), contains(item()?['{Path}'],items('Apply_to_each_folder')))"
+                      },
+                      "metadata": {
+                        "operationMetadataId": "3cf17ed1-6aab-4c03-945b-427c6e61aab4"
+                      }
+                    },
+                    "Filter_associated_documents": {
+                      "type": "Query",
+                      "inputs": {
+                        "from": "@outputs('Get_files_MetadataComplete_EQ_null')?['body/value']",
+                        "where": "@and(not(contains(outputs('List_contractDocumentTypes')?['body/value'], item()?['DocumentType'])), contains(item()?['{Path}'],items('Apply_to_each_folder')))"
+                      },
+                      "metadata": {
+                        "operationMetadataId": "a1139e01-86fc-40a1-8f2d-cc7ddb34c4b4"
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {}
+                  },
+                  "runAfter": {
+                    "Get_contract_details": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "c3c7d254-4e2e-465b-86fb-92b3c35ab4ac"
+                  }
+                }
+              },
+              "runAfter": {
+                "Select_distinct_folders": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "da140d4a-480a-41fd-b15b-2374dab94391"
+              }
+            }
+          },
+          "runAfter": {
+            "Filter_NoticiationTypes": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "ff2204ae-4144-4250-840d-04c44a532d66"
+          }
+        },
+        "List_contractDocumentTypes": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "adx_sitesettings",
+              "fetchXml": "<fetch>\n  <entity name=\"adx_sitesetting\">\n    <attribute name=\"adx_name\" />\n    <attribute name=\"adx_value\" />\n    <filter>\n      <condition attribute=\"adx_name\" operator=\"eq\" value=\"PortalContractDocumentTypes\" />\n    </filter>\n  </entity>\n</fetch>"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "connectionName": "shared_commondataserviceforapps"
+            }
+          },
+          "runAfter": {
+            "Initialize_roleToCheck": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "22cbc92e-4502-47f6-bdc5-500e3cdd4b9e"
+          }
+        },
+        "SP_GetNotificationTypes": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "server": "default",
+              "database": "default",
+              "procedure": "[notifications].[GetNotificationTypes]"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sql",
+              "operationId": "ExecuteProcedure_V2",
+              "connectionName": "shared_sql-1"
+            }
+          },
+          "runAfter": {
+            "List_contractDocumentTypes": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "d27891d7-8817-4c93-99ce-4e9134c136fe"
+          }
+        },
+        "Parse_JSON_NotificationTypes": {
+          "type": "ParseJson",
+          "inputs": {
+            "content": "@outputs('SP_GetNotificationTypes')?['body/outputparameters/NotificationTypesJson']",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "Id": {
+                    "type": "string"
+                  },
+                  "Title": {
+                    "type": "string"
+                  },
+                  "Category": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "Id",
+                  "Title",
+                  "Category"
+                ]
+              }
+            }
+          },
+          "runAfter": {
+            "SP_GetNotificationTypes": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "21a11fd8-0a38-4d65-8b30-bcb3047d0069"
+          }
+        },
+        "Filter_NoticiationTypes": {
+          "type": "Query",
+          "inputs": {
+            "from": "@body('Parse_JSON_NotificationTypes')",
+            "where": "@equals(item()['Title'],'New Documentation')"
+          },
+          "runAfter": {
+            "Parse_JSON_NotificationTypes": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6c98a590-371e-462a-aa8a-2b3c3a21f518"
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}
