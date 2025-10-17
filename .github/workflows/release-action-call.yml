@@ -9,10 +9,10 @@ permissions:
   contents: write
 jobs:
   Release-solution-ALMLab:
-    uses: ./.github/workflows/release-solution-to-prod-with-inputs.yml
+    uses: ./.github/workflows/release-solution-to-TEST.yml
     with:
       #You can specify the solution name here
-      solution_name: ALMLab
+      solution_name: GitHubTest
       #Update your values here
       BUILD_ENVIRONMENT_URL: https://inprovagroupdev.crm4.dynamics.com/
       PRODUCTION_ENVIRONMENT_URL: https://inprovagrouptest.crm4.dynamics.com/
