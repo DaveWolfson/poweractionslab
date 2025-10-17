@@ -16,7 +16,7 @@ jobs:
       #Update your values here
       BUILD_ENVIRONMENT_URL: https://inprovagroupdev.crm4.dynamics.com/
       PRODUCTION_ENVIRONMENT_URL: https://inprovagrouptest.crm4.dynamics.com/
-      CLIENT_ID: 'service account-ish'
-      TENANT_ID: '77f....'
+      CLIENT_ID: '3a2aa6ce-1e3e-46e5-87dd-a7787d5eb575'
+      TENANT_ID: '77bd4cfb-3a52-44f9-8695-8848578737e1'
     secrets:
       envSecret: ${{ secrets.PowerPlatformSPN }}
