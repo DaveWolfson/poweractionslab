@@ -57,6 +57,9 @@ jobs:
       RUNNER_DEBUG: 1
 
     steps:
+    - name: Install Power Platform Tools
+      uses: microsoft/powerplatform-actions/actions-install@v1
+        
     - uses: actions/checkout@v2
       with:
         lfs: true
@@ -91,7 +94,7 @@ jobs:
         solution-output-file: ${{ inputs.solution_shipping_folder}}/${{ inputs.solution_name }}_managed.zip
 
     - name: Upload the ready to ship solution to GH artifact store
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: managedSolutions
         path: ${{ inputs.solution_shipping_folder}}/
